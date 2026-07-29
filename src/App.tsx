@@ -6,6 +6,7 @@ import { RosterImport } from './components/RosterImport';
 import { Scoreboard } from './components/Scoreboard';
 import { TurnHandoff } from './components/TurnHandoff';
 import { loadRoster, membersToEntities, type MemberRecord } from './data/members';
+import { ROSTER_FETCHED_AT, ROSTER_SOURCE } from './data/roster';
 import { createGame, giveClue, pass, revealCard } from './game/engine';
 import { normaliseSeed, randomSeed } from './game/rng';
 import { BOARD_SIZE, type GameState } from './game/types';
@@ -64,16 +65,21 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // Embedded in a frame, window.location is the frame's own URL rather than the
+  // page someone could open, so the seed itself is the only thing worth copying.
+  const framed = typeof window !== 'undefined' && window.self !== window.top;
+
   const shareLink = useCallback(() => {
     const { origin, pathname } = window.location;
-    void navigator.clipboard?.writeText(`${origin}${pathname}#seed=${seed}`).then(
+    const text = framed ? seed : `${origin}${pathname}#seed=${seed}`;
+    void navigator.clipboard?.writeText(text).then(
       () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       },
       () => setCopied(false),
     );
-  }, [seed]);
+  }, [seed, framed]);
 
   return (
     <div className="app">
@@ -96,8 +102,17 @@ export default function App() {
               />
             </label>
 
-            <button type="button" className="btn" onClick={shareLink}>
-              {copied ? 'Copied' : 'Share'}
+            <button
+              type="button"
+              className="btn"
+              onClick={shareLink}
+              title={
+                framed
+                  ? 'Copy the seed — type it in on another device for the same board'
+                  : 'Copy a link that opens this exact board'
+              }
+            >
+              {copied ? 'Copied' : framed ? 'Copy seed' : 'Share'}
             </button>
             <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
               New game
@@ -221,6 +236,21 @@ export default function App() {
           }}
         />
       )}
+
+      <footer className="colophon">
+        <p>
+          Names and portraits come from the City of London Corporation&rsquo;s{' '}
+          <a href={ROSTER_SOURCE} target="_blank" rel="noreferrer">
+            public register of Members
+          </a>
+          {ROSTER_FETCHED_AT && <> as it stood on {ROSTER_FETCHED_AT}</>}. An unofficial
+          game, not affiliated with or endorsed by the Corporation.
+        </p>
+        <p>
+          Codenames is a game by Vlaada Chv&aacute;til, published by Czech Games Edition.
+          This is an unofficial take on the mechanics with a different card set.
+        </p>
+      </footer>
     </div>
   );
 }

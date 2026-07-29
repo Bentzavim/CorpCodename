@@ -829,3 +829,22 @@ a {
     margin-left: 0;
   }
 }
+
+/* --- colophon -------------------------------------------------------------- */
+
+.colophon {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+
+.colophon p {
+  margin: 0;
+}
