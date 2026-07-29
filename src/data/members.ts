@@ -55,12 +55,11 @@ export function membersToEntities(records: MemberRecord[]): Entity[] {
   return records.map((m, i) => ({
     id: `member:${slug(m.name)}:${i}`,
     name: displayName(m.name),
-    subtitle: [m.role, m.ward].filter(Boolean).join(' · ') || undefined,
     photo: m.photo,
   }));
 }
 
-/** Offices held, which the card carries as its subtitle rather than in the name. */
+/** Offices, which belong to the record rather than to the name on the card. */
 const OFFICE =
   /\b(alderwoman|alderman|deputy|sheriff|chief\s+commoner|councillor|councilman|councilwoman|cllr\.?)\b/gi;
 
@@ -71,23 +70,54 @@ const OFFICE =
 const POST_NOMINAL =
   /\b(KC|QC|MBE|OBE|CBE|DBE|KBE|GBE|BEM|JP|DL|TD|VR|VO|CVO|KCVO|DSO|MC)\b/g;
 
-/** Prefixes that are an office rather than part of the name. */
-const OFFICE_PREFIX = /^(the\s+rt\s+hon\.?\s+|the\s+right\s+honourable\s+|the\s+honourable\s+|the\s+lady\s+mayor,?\s+|the\s+lord\s+mayor,?\s+)+/gi;
+/**
+ * Honorifics and offices, stripped only from the front of a name. "Lord",
+ * "King" and "Mayor" are all surnames in this roster, so removing these
+ * anywhere would eat real names.
+ */
+const LEADING_TITLE =
+  /^(the|rt\.?|right|hon\.?|honourable|lady|lord|mayor|sir|dame|professor|prof\.?|dr\.?|mr\.?|mrs\.?|ms\.?|miss)\s+/i;
+
+/** The only titles that stay on the card. */
+const KEPT_TITLE: [RegExp, string][] = [
+  [/\bdame\b/i, 'Dame'],
+  [/\bsir\b/i, 'Sir'],
+  [/\b(hon\.?|honourable)\b/i, 'Hon.'],
+];
+
+/** Surname particles that belong with the word after them. */
+const PARTICLE =
+  /^(van|von|de|del|della|di|da|dos|du|la|le|el|al|ten|ter|bin|ibn|abu|mac|mc|st\.?|saint)$/i;
 
 /**
- * The name as it goes on a card: honorifics that are part of how someone is
- * known (Sir, Dame, Professor, Dr) are kept, while offices and post-nominals are
- * dropped so 25 of these can be read at a glance on a board.
+ * The name as it goes on a card: a title only if it is Sir, Dame or Hon., then
+ * the first name and the surname. Middle names, offices and post-nominals all
+ * come off, so 25 of these can be read at a glance on a board.
  */
 export function displayName(raw: string): string {
-  return raw
-    .replace(OFFICE_PREFIX, '')
+  const stripped = raw
     .replace(/\([^)]*\)/g, ' ') // "(Alderman)", "(Alderman & Sheriff)"
     .replace(POST_NOMINAL, ' ')
     .replace(OFFICE, ' ')
     .replace(/[,&]/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+  const title = KEPT_TITLE.find(([pattern]) => pattern.test(stripped))?.[1] ?? '';
+
+  let rest = stripped;
+  while (LEADING_TITLE.test(rest)) rest = rest.replace(LEADING_TITLE, '');
+
+  const words = rest.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return stripped;
+
+  // Walk back over any particles so "de Vere" stays whole.
+  let start = words.length - 1;
+  while (start > 1 && PARTICLE.test(words[start - 1])) start -= 1;
+  const surname = words.slice(start).join(' ');
+  const forename = words.length > 1 ? words[0] : '';
+
+  return [title, forename, surname].filter(Boolean).join(' ');
 }
 
 function slug(value: string): string {

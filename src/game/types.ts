@@ -8,8 +8,6 @@ export interface Entity {
   id: string;
   /** Shown large on the card. */
   name: string;
-  /** Shown small under the name (ward, role, …). Optional. */
-  subtitle?: string;
   /** Optional portrait URL. Falls back to a generated avatar when absent. */
   photo?: string;
 }

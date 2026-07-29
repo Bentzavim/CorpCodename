@@ -165,8 +165,8 @@ def role(name):
     return 'Alderman' if 'Alderman' in name else 'Common Councillor'
 
 
-# Mirrors displayName() in src/data/members.ts. Only used for sorting here, so
-# the roster comes out in the surname order a reader sees on the cards.
+# Used only to sort the roster by surname, the order the index itself uses.
+# Cards get their much shorter label from displayName() in src/data/members.ts.
 OFFICE = re.compile(r'\b(alderwoman|alderman|deputy|sheriff|chief\s+commoner|'
                     r'councillor|councilman|councilwoman|cllr\.?)\b', re.I)
 POST_NOMINAL = re.compile(r'\b(KC|QC|MBE|OBE|CBE|DBE|KBE|GBE|BEM|JP|DL|TD|VR|VO'
@@ -176,7 +176,7 @@ OFFICE_PREFIX = re.compile(r'^(the\s+rt\s+hon\.?\s+|the\s+right\s+honourable\s+|
                            r'the\s+lord\s+mayor,?\s+)+', re.I)
 
 
-def display_name(raw):
+def bare_name(raw):
     name = OFFICE_PREFIX.sub('', raw)
     name = re.sub(r'\([^)]*\)', ' ', name)
     name = POST_NOMINAL.sub(' ', name)
@@ -186,8 +186,8 @@ def display_name(raw):
 
 
 def sort_key(record):
-    shown = display_name(record['name'])
-    return (shown.split()[-1].lower(), shown.lower())
+    bare = bare_name(record['name'])
+    return (bare.split()[-1].lower(), bare.lower())
 
 
 def check(records):

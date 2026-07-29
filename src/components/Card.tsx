@@ -39,12 +39,11 @@ export function Card({ card, index, spymaster, disabled, onReveal }: Props) {
       aria-label={
         revealed
           ? `${entity.name} — already turned over, ${KIND_LABEL[kind]}`
-          : `Turn over ${entity.name}${entity.subtitle ? `, ${entity.subtitle}` : ''}`
+          : `Turn over ${entity.name}`
       }
     >
       <Avatar entity={entity} />
       <span className="card__name">{entity.name}</span>
-      {entity.subtitle && <span className="card__subtitle">{entity.subtitle}</span>}
       {showKind && <span className="card__kind">{KIND_LABEL[kind]}</span>}
     </button>
   );

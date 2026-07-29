@@ -401,13 +401,6 @@ a {
   hyphens: auto;
 }
 
-.card__subtitle {
-  font-size: clamp(0.5rem, 0.85vw, 0.68rem);
-  color: var(--muted);
-  line-height: 1.1;
-  overflow-wrap: anywhere;
-}
-
 .card__kind {
   font-size: 0.55rem;
   text-transform: uppercase;
@@ -424,7 +417,6 @@ a {
   opacity: 0.55;
 }
 
-.card--revealed .card__subtitle,
 .card--revealed .card__kind {
   color: inherit;
   opacity: 0.8;
@@ -808,8 +800,7 @@ a {
     padding: 0.3rem 0.2rem;
   }
 
-  .card .avatar,
-  .card__subtitle {
+  .card .avatar {
     display: none;
   }
 

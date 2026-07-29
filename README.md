@@ -45,10 +45,12 @@ Each game deals 25 of them, so boards stay varied. Nothing needs importing.
 
 Names are stored exactly as the index prints them —
 `Sir Alastair John Naisbitt King DL (Alderman)` — and `displayName()` in
-`src/data/members.ts` is the single place that trims one down for a card
-(`Sir Alastair John Naisbitt King`). Offices and post-nominals come off; Sir,
-Dame, Professor and Dr stay, since that is how these Members are known. The
-office and ward become the card's subtitle instead.
+`src/data/members.ts` is the single place that cuts one down to what a card
+shows: **an optional title, a first name and a surname**, so
+`Sir Alastair King`. Middle names, offices, wards and post-nominals are all
+dropped, and the only titles kept are Sir, Dame and Hon. Nothing else appears on
+a card. All 125 stay distinct once shortened, which `displayName` is checked
+against — if a future roster ever collides, that check is where it will show up.
 
 ### Refreshing it
 
