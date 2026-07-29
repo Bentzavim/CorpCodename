@@ -40,7 +40,8 @@ is forced off at every handoff and every new board.
 `src/data/roster.ts` holds the full Court of Common Council — **125 Members: 25
 Aldermen and Alderwomen, one per Ward, and 100 Common Councillors** — transcribed
 from the official
-[member index](https://democracy.cityoflondon.gov.uk/mgMemberIndex.aspx?bcr=1).
+[member index](https://democracy.cityoflondon.gov.uk/mgMemberIndex.aspx?bcr=1),
+each with their official portrait in `public/members/` (125 files, ~640 KiB).
 Each game deals 25 of them, so boards stay varied. Nothing needs importing.
 
 Names are stored exactly as the index prints them —
@@ -73,10 +74,18 @@ The second path is for when the portal is blocked but someone can open it in a
 browser and print the page to PDF — which is how the current roster was built.
 The printout is a five-column card grid, so the parser keys records on column
 and vertical position rather than reading order, anchors each on its member UID,
-and matches wards against the 25 known names. It then refuses to write unless
-the result matches what the index states about itself: 125 Members, 25 wards,
-exactly one Alderman per ward, and at least two Common Councillors alongside.
-No portraits — those only exist on the member pages.
+and matches wards against the 25 known names.
+
+Portraits are embedded in the printout and come out with it. They are placed
+through the graphics matrix rather than the text matrix — a different scale,
+with y running the other way — so they are matched by their order down each
+page-column: the nth portrait belongs to the nth card. A column whose portrait
+and member counts disagree is reported rather than guessed at, because one
+missing picture would shift every pairing below it.
+
+The script refuses to write at all unless the result matches what the index
+states about itself: 125 Members, 25 wards, exactly one Alderman per ward, at
+least two Common Councillors alongside, and a portrait for everyone.
 
 ### Importing a different roster
 

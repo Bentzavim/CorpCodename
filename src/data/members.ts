@@ -55,8 +55,19 @@ export function membersToEntities(records: MemberRecord[]): Entity[] {
   return records.map((m, i) => ({
     id: `member:${slug(m.name)}:${i}`,
     name: displayName(m.name),
-    photo: m.photo,
+    photo: resolvePhoto(m.photo),
   }));
+}
+
+/**
+ * Portraits taken from the printout are written into `public/` and stored as
+ * paths relative to it, so they follow the app wherever it is deployed. The
+ * scraper stores absolute portal URLs instead; those are left alone.
+ */
+function resolvePhoto(photo?: string): string | undefined {
+  if (!photo) return undefined;
+  if (/^(https?:)?\/\/|^data:/i.test(photo)) return photo;
+  return import.meta.env.BASE_URL.replace(/\/$/, '') + '/' + photo.replace(/^\//, '');
 }
 
 /** Offices, which belong to the record rather than to the name on the card. */

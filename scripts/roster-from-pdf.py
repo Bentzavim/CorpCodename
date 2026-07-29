@@ -100,23 +100,23 @@ def place_orphans(runs):
     return runs
 
 
-def read_lines(pdf_path):
-    """Merge text runs into (column, y, text) lines, dropping page furniture."""
+def read_lines(reader):
+    """Merge text runs into (page, column, y, text) lines, dropping page furniture."""
     cells = {}
-    for page in PdfReader(pdf_path).pages:
+    for pno, page in enumerate(reader.pages):
         for x, y, text in place_orphans(page_runs(page)):
             col = column(x)
             if col is not None:
-                cells.setdefault((col, round(y)), []).append((x, text))
+                cells.setdefault((pno, col, round(y)), []).append((x, text))
 
     lines = []
-    for (col, y), parts in cells.items():
+    for (pno, col, y), parts in cells.items():
         parts.sort()
         text = ' '.join(t for _, t in parts)
         if y < BODY_TOP or CHROME.search(text):
             continue
-        lines.append((col, y, text))
-    lines.sort()
+        lines.append((pno, col, y, text))
+    lines.sort(key=lambda r: (r[1], r[2]))  # column, then down the page
     return lines
 
 
@@ -136,27 +136,112 @@ def join_name(parts):
 def parse(lines):
     records = []
     for col in range(5):
-        col_lines = [t for c, _, t in lines if c == col]
+        seq = [(p, y, t) for p, c, y, t in lines if c == col]
         i, buf = 0, []
-        while i < len(col_lines):
-            uid = re.match(r'^UID=(\d+)\)$', col_lines[i])
+        while i < len(seq):
+            page, y, text = seq[i]
+            uid = re.match(r'^UID=(\d+)\)$', text)
             if not uid:
-                buf.append(col_lines[i])
+                buf.append((page, y, text))
                 i += 1
                 continue
-            name = join_name([b for b in buf if b != '(mgUserInfo.aspx?'])
+            named = [b for b in buf if b[2] != '(mgUserInfo.aspx?']
+            # The portrait sits above the name, so a card split over a page break
+            # is anchored to where its name starts, not to where its UID landed.
+            head = named[0] if named else (page, y, '')
+            name = join_name([b[2] for b in named])
             buf = []
             i += 1
             ward = None
             for span in (2, 1):  # a long ward wraps onto a second line
-                if ' '.join(col_lines[i:i + span]) in WARDS:
-                    ward = ' '.join(col_lines[i:i + span])
+                if ' '.join(s[2] for s in seq[i:i + span]) in WARDS:
+                    ward = ' '.join(s[2] for s in seq[i:i + span])
                     i += span
                     break
-            while i < len(col_lines) and col_lines[i] in LABELS:
+            while i < len(seq) and seq[i][2] in LABELS:
                 i += 1
-            records.append({'uid': int(uid.group(1)), 'name': name, 'ward': ward})
+            records.append({'uid': int(uid.group(1)), 'name': name, 'ward': ward,
+                            'page': head[0], 'col': col, 'y': head[1]})
     return records
+
+
+# Portraits are placed in the same five columns as the text, but through the
+# graphics matrix rather than the text matrix — a different scale, and y runs
+# upward instead of down.
+IMG_BOUNDS = (102, 192, 282, 372)
+
+
+def image_column(x):
+    for i, bound in enumerate(IMG_BOUNDS):
+        if x < bound:
+            return i
+    return 4
+
+
+def image_placements(reader):
+    """Where every image is drawn, as (page, column, y, xobject id)."""
+    placements = []
+    for pno, page in enumerate(reader.pages):
+        drawn = []
+        page.extract_text(
+            visitor_operand_before=lambda op, operands, cm, tm, _d=drawn:
+                _d.append((str(operands[0]).lstrip('/'), cm[4], cm[5]))
+                if op == b'Do' else None)
+        placements.extend(
+            {'page': pno, 'col': image_column(x), 'y': y, 'id': name}
+            for name, x, y in drawn)
+    return placements
+
+
+def pair_portraits(records, placements):
+    """Match each record to the portrait drawn above it.
+
+    Within one page-column both lists run top to bottom, so the nth portrait
+    belongs to the nth card. Any column where the two counts disagree — a member
+    printed without a picture, say — is reported rather than guessed at, since a
+    single missing portrait would shift every pairing below it.
+    """
+    by_cell = {}
+    for r in records:
+        by_cell.setdefault((r['page'], r['col']), []).append(r)
+    imgs = {}
+    for p in placements:
+        imgs.setdefault((p['page'], p['col']), []).append(p)
+
+    problems = []
+    for cell, cards in by_cell.items():
+        cards.sort(key=lambda r: r['y'])                    # text y grows down
+        pictures = sorted(imgs.get(cell, []), key=lambda p: -p['y'])  # image y grows up
+        if len(pictures) != len(cards):
+            problems.append(f'page {cell[0]} column {cell[1]}: {len(cards)} members '
+                            f'but {len(pictures)} portraits')
+            continue
+        for card, picture in zip(cards, pictures):
+            card['image'] = picture['id']
+    return problems
+
+
+def slug(value):
+    """Mirrors slug() in src/data/members.ts."""
+    return re.sub(r'^-|-$', '', re.sub(r'[^a-z0-9]+', '-', value.lower()))
+
+
+def save_portraits(reader, records, out_dir):
+    """Write each paired portrait out under a name derived from the member's."""
+    wanted = {r['image']: r for r in records if 'image' in r}
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written = 0
+    for page in reader.pages:
+        for image in page.images:
+            stem, ext = image.name.rsplit('.', 1) if '.' in image.name else (image.name, 'jpg')
+            record = wanted.get(stem)
+            if record is None or 'photo' in record:
+                continue
+            filename = f'{slug(bare_name(record["name"]))}.{ext}'
+            (out_dir / filename).write_bytes(image.data)
+            record['photo'] = f'{out_dir.name}/{filename}'
+            written += 1
+    return written
 
 
 def role(name):
@@ -220,10 +305,14 @@ def serialise(records):
     def quote(s):
         return "'" + s.replace('\\', '\\\\').replace("'", "\\'") + "'"
 
-    rows = '\n'.join(
-        f"  {{ name: {quote(r['name'])}, ward: {quote(r['ward'])}, "
-        f"role: {quote(role(r['name']))} }},"
-        for r in records)
+    def row(r):
+        fields = [f"name: {quote(r['name'])}", f"ward: {quote(r['ward'])}",
+                  f"role: {quote(role(r['name']))}"]
+        if r.get('photo'):
+            fields.append(f"photo: {quote(r['photo'])}")
+        return '  { ' + ', '.join(fields) + ' },'
+
+    rows = '\n'.join(row(r) for r in records)
     aldermen = sum(1 for r in records if role(r['name']) != 'Common Councillor')
     return f"""\
 // -----------------------------------------------------------------------------
@@ -235,6 +324,7 @@ def serialise(records):
 //
 // Names are stored exactly as the index prints them, honours and office
 // included; `displayName()` in ./members.ts trims them down for a card.
+// Portraits live in public/ and are resolved against the app's base URL.
 //
 // AUTO-GENERATED by scripts/roster-from-pdf.py — do not edit by hand.
 // -----------------------------------------------------------------------------
@@ -255,11 +345,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('pdf', help='print-to-PDF of the member index')
     ap.add_argument('-o', '--out', default='src/data/roster.ts')
+    ap.add_argument('--portraits', default='public/members',
+                    help='directory for the extracted portraits')
+    ap.add_argument('--no-portraits', action='store_true')
     ap.add_argument('--force', action='store_true',
                     help='write even if the consistency checks fail')
     args = ap.parse_args()
 
-    records = parse(read_lines(args.pdf))
+    reader = PdfReader(args.pdf)
+    records = parse(read_lines(reader))
     if not records:
         sys.exit('No members found — is this the member index page?')
 
@@ -267,6 +361,14 @@ def main():
     records.sort(key=sort_key)
 
     problems = check(records)
+    saved = 0
+    if not args.no_portraits:
+        problems += pair_portraits(records, image_placements(reader))
+        if unpaired := [r['name'] for r in records if 'image' not in r]:
+            problems.append(f'{len(unpaired)} members without a portrait: {unpaired[:5]}')
+        else:
+            saved = save_portraits(reader, records, Path(args.portraits))
+
     for p in problems:
         print(f'  ! {p}', file=sys.stderr)
     if problems and not args.force:
@@ -277,7 +379,8 @@ def main():
     print(f'Wrote {len(records)} members to {args.out}\n'
           f'  {aldermen} Aldermen and Alderwomen, '
           f'{len(records) - aldermen} Common Councillors\n'
-          f'  {len(set(r["ward"] for r in records))} wards')
+          f'  {len(set(r["ward"] for r in records))} wards\n'
+          f'  {saved} portraits into {args.portraits}')
 
 
 if __name__ == '__main__':
