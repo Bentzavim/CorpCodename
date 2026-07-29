@@ -1,0 +1,781 @@
+/* ---------------------------------------------------------------------------
+   Corp Codenames — City of London palette: slate and parchment, with the red
+   and blue of the two benches and a little civic gold.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --bg: #12161f;
+  --bg-deep: #0c0f16;
+  --surface: #1b2130;
+  --surface-2: #232b3d;
+  --line: #313a4f;
+  --ink: #e8e4dc;
+  --muted: #98a2b8;
+  --gold: #c9a227;
+
+  --red: #c0392f;
+  --red-soft: #8c2b24;
+  --blue: #2f6fb0;
+  --blue-soft: #24547f;
+  --neutral: #8d8578;
+  --neutral-soft: #6a6459;
+  --assassin: #0b0d12;
+
+  --radius: 12px;
+  --shadow: 0 6px 20px rgb(0 0 0 / 35%);
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1d2434 0%, transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  margin: 0;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: var(--bg-deep);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
+
+a {
+  color: var(--gold);
+}
+
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+/* --- top bar --------------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.25rem;
+}
+
+.topbar__brand h1 {
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  letter-spacing: 0.01em;
+}
+
+.topbar__brand p {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.topbar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field > span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.field select,
+.field input,
+.cluebar input {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.field__seed {
+  width: 8.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.field select:focus-visible,
+.field input:focus-visible,
+.cluebar input:focus-visible,
+.btn:focus-visible,
+.card:focus-visible,
+.spytoggle:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* --- buttons --------------------------------------------------------------- */
+
+.btn {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #2c3549;
+  border-color: #43506c;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--gold);
+  border-color: #a9871c;
+  color: #1a1508;
+  font-weight: 600;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: #d9b333;
+  border-color: var(--gold);
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+/* --- layout ---------------------------------------------------------------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 19rem;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  position: sticky;
+  top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout__side {
+    position: static;
+  }
+}
+
+/* --- scoreboard ------------------------------------------------------------ */
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.score {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.7rem;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  opacity: 0.62;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.score--active,
+.score--won {
+  opacity: 1;
+}
+
+.score--red.score--active,
+.score--red.score--won {
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red-soft), 0 0 18px -8px var(--red);
+}
+
+.score--blue.score--active,
+.score--blue.score--won {
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue-soft), 0 0 18px -8px var(--blue);
+}
+
+.score__count {
+  grid-row: 1 / 3;
+  font-family: var(--serif);
+  font-size: 2rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score--red .score__count {
+  color: #e8695d;
+}
+
+.score--blue .score__count {
+  color: #6ba6de;
+}
+
+.score__team {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.score__note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* --- clue bar -------------------------------------------------------------- */
+
+.cluebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+}
+
+.cluebar--red {
+  border-left-color: var(--red);
+}
+
+.cluebar--blue {
+  border-left-color: var(--blue);
+}
+
+.cluebar--over {
+  border-left-color: var(--gold);
+  background: linear-gradient(90deg, rgb(201 162 39 / 12%), transparent 55%), var(--surface);
+}
+
+.cluebar__label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.cluebar__word {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.cluebar__count {
+  width: 4.2rem;
+}
+
+.cluebar__clue {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+}
+
+.cluebar__clue em {
+  font-style: normal;
+  color: var(--gold);
+  font-weight: 700;
+  margin-left: 0.2rem;
+}
+
+.cluebar__left {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* --- board ----------------------------------------------------------------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(0.35rem, 1vw, 0.7rem);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  aspect-ratio: 1 / 0.7;
+  padding: 0.5rem 0.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease,
+    background 0.2s ease;
+}
+
+.card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: #4a5876;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.card__name {
+  font-family: var(--serif);
+  font-size: clamp(0.62rem, 1.15vw, 0.92rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.card__subtitle {
+  font-size: clamp(0.5rem, 0.85vw, 0.68rem);
+  color: var(--muted);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.card__kind {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+/* Turned over — the card takes the full team colour. */
+.card--revealed {
+  transform: none;
+}
+
+.card--revealed .avatar {
+  opacity: 0.55;
+}
+
+.card--revealed .card__subtitle,
+.card--revealed .card__kind {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.card--revealed.card--red {
+  background: var(--red);
+  border-color: var(--red-soft);
+  color: #fff5f3;
+}
+
+.card--revealed.card--blue {
+  background: var(--blue);
+  border-color: var(--blue-soft);
+  color: #f2f8ff;
+}
+
+.card--revealed.card--neutral {
+  background: var(--neutral);
+  border-color: var(--neutral-soft);
+  color: #1b1a17;
+}
+
+.card--revealed.card--assassin {
+  background: var(--assassin);
+  border-color: #000;
+  color: #d9534a;
+  box-shadow: inset 0 0 24px rgb(192 57 47 / 35%);
+}
+
+/* Spymaster peek — a coloured edge, but the card still reads as unturned. */
+.card--peek {
+  border-width: 2px;
+}
+
+.card--peek.card--red {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgb(192 57 47 / 22%), var(--surface));
+}
+
+.card--peek.card--blue {
+  border-color: var(--blue);
+  background: linear-gradient(180deg, rgb(47 111 176 / 22%), var(--surface));
+}
+
+.card--peek.card--neutral {
+  border-color: var(--neutral);
+  background: linear-gradient(180deg, rgb(141 133 120 / 20%), var(--surface));
+}
+
+.card--peek.card--assassin {
+  border-color: #d9534a;
+  background: linear-gradient(180deg, #0b0d12, #1a0f10);
+  box-shadow: inset 0 0 20px rgb(217 83 74 / 30%);
+}
+
+/* --- avatars --------------------------------------------------------------- */
+
+.avatar {
+  flex: 0 0 auto;
+  width: clamp(1.6rem, 3.4vw, 2.6rem);
+  height: clamp(1.6rem, 3.4vw, 2.6rem);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-size: clamp(0.6rem, 1.3vw, 0.95rem);
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  border: 1px solid rgb(255 255 255 / 18%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 15%);
+}
+
+.avatar--photo {
+  object-fit: cover;
+  background: var(--bg-deep);
+}
+
+/* --- side panels ----------------------------------------------------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.panel h2 {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.panel__note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.panel--log {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.spytoggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  border: 1px dashed var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.spytoggle:hover {
+  border-color: var(--gold);
+}
+
+.spytoggle.is-on {
+  border-style: solid;
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgb(201 162 39 / 18%), var(--surface));
+}
+
+.spytoggle__title {
+  font-family: var(--serif);
+  font-size: 1rem;
+}
+
+.spytoggle__note {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.spytoggle.is-on .spytoggle__note {
+  color: var(--gold);
+}
+
+/* --- log ------------------------------------------------------------------- */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.log__item {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--line);
+}
+
+.log__item--clue {
+  color: var(--ink);
+  border-left-color: var(--gold);
+}
+
+.log__item--end {
+  color: var(--gold);
+  font-weight: 600;
+  border-left-color: var(--gold);
+}
+
+.log__empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* --- empty deck state ------------------------------------------------------ */
+
+.empty {
+  display: grid;
+  place-items: center;
+  padding: 2rem 0;
+}
+
+.empty__panel {
+  max-width: 40rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--shadow);
+}
+
+.empty__panel h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.empty__panel p,
+.empty__panel li {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.empty__panel strong {
+  color: var(--ink);
+}
+
+.empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+/* --- import modal ---------------------------------------------------------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgb(6 8 12 / 72%);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.modal__panel {
+  width: min(46rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.modal__panel h2 {
+  font-size: 1.2rem;
+}
+
+.modal__intro {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.modal__intro strong {
+  color: var(--ink);
+}
+
+.modal__textarea {
+  min-height: 11rem;
+  resize: vertical;
+  background: var(--bg-deep);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.modal__status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.modal__status.is-ok {
+  color: #7bc47f;
+}
+
+.modal__status.is-warn {
+  color: var(--gold);
+}
+
+.modal__preview {
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  list-style: none;
+  background: var(--bg-deep);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.modal__preview span,
+.modal__preview .is-muted {
+  color: var(--muted);
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.modal__spacer {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 620px) {
+  .app {
+    padding: 0.75rem 0.6rem 2rem;
+  }
+
+  /* At this width a 5-column board leaves ~60px per card, so the portrait and
+     the ward line are dropped and the whole card is given over to the name. */
+  .card {
+    aspect-ratio: 1 / 0.92;
+    padding: 0.3rem 0.2rem;
+  }
+
+  .card .avatar,
+  .card__subtitle {
+    display: none;
+  }
+
+  .card__name {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
+
+  .card__kind {
+    font-size: 0.5rem;
+    letter-spacing: 0.06em;
+  }
+
+  .scoreboard {
+    gap: 0.5rem;
+  }
+
+  .cluebar__left {
+    margin-left: 0;
+  }
+}
