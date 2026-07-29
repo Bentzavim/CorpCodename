@@ -131,9 +131,14 @@ function parseMemberPage(html) {
 }
 
 function toRecord(rawName, ward, photo) {
-  const role = /alder(man|woman)/i.test(rawName) ? 'Alderman' : 'Common Councillor';
+  const role = /alderwoman/i.test(rawName)
+    ? 'Alderwoman'
+    : /alderman/i.test(rawName)
+      ? 'Alderman'
+      : 'Common Councillor';
+  // Keep the name as the index prints it — displayName() in src/data/members.ts
+  // is the single place that trims a name down for a card.
   const name = rawName
-    .replace(/\b(alderwoman|alderman|deputy|councillor|councilman|councilwoman|cllr\.?)\b\s*/gi, '')
     .replace(/^(mr\.?|mrs\.?|miss|ms\.?)\s+/i, '')
     .replace(/,\s*$/, '')
     .replace(/\s{2,}/g, ' ')
@@ -175,7 +180,7 @@ import type { MemberRecord } from './members';
 
 export const ROSTER_SOURCE = ${JSON.stringify(SOURCE_URL)};
 
-/** ISO timestamp of the last successful scrape, or null for the seed data. */
+/** ISO timestamp of the last successful scrape. */
 export const ROSTER_FETCHED_AT: string | null = ${JSON.stringify(new Date().toISOString())};
 
 export const ROSTER: MemberRecord[] = [
@@ -214,14 +219,18 @@ async function main() {
     records = index.map(({ rawName }) => toRecord(rawName));
   }
 
-  records.sort((a, b) => a.name.localeCompare(b.name));
+  // Sort by surname, which is what the index itself is ordered by.
+  const surname = (n) => (n.split(/\s+/).pop() ?? n).toLowerCase();
+  records.sort((a, b) => surname(a.name).localeCompare(surname(b.name))
+    || a.name.localeCompare(b.name));
   await writeFile(OUT, serialise(records), 'utf8');
 
   const withWard = records.filter((r) => r.ward).length;
-  const aldermen = records.filter((r) => r.role === 'Alderman').length;
+  const aldermen = records.filter((r) => r.role !== 'Common Councillor').length;
   console.log(
     `\nWrote ${records.length} members to ${OUT}` +
-      `\n  ${aldermen} Aldermen, ${records.length - aldermen} Common Councillors` +
+      `\n  ${aldermen} Aldermen and Alderwomen, ` +
+      `${records.length - aldermen} Common Councillors` +
       `\n  ${withWard} with a ward, ${records.filter((r) => r.photo).length} with a portrait`,
   );
   if (records.length < 25) {

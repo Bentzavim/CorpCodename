@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BOARD_SIZE } from '../game/types';
 import {
   clearRoster,
+  displayName,
   hasImportedRoster,
   parseRoster,
   saveRoster,
@@ -25,13 +26,14 @@ export function RosterImport({ currentCount, onClose, onImported }: Props) {
       <div className="modal__panel">
         <h2>Import the Members roster</h2>
         <p className="modal__intro">
-          The Members deck currently holds <strong>{currentCount}</strong>{' '}
-          {currentCount === 1 ? 'name' : 'names'} and needs {BOARD_SIZE} for a board. Open{' '}
+          The roster holds <strong>{currentCount}</strong>{' '}
+          {currentCount === 1 ? 'name' : 'names'}; a board needs {BOARD_SIZE}. To replace it,
+          open{' '}
           <a href={ROSTER_SOURCE} target="_blank" rel="noreferrer">
             the City of London member index
           </a>
           , select the list of members, copy it, and paste it below. Names and wards are
-          picked out automatically.
+          picked out automatically, and the result is kept in this browser only.
         </p>
 
         <textarea
@@ -56,7 +58,7 @@ export function RosterImport({ currentCount, onClose, onImported }: Props) {
           <ul className="modal__preview">
             {parsed.slice(0, 6).map((m) => (
               <li key={m.name}>
-                {m.name}
+                {displayName(m.name)}
                 {m.ward && <span> · {m.ward}</span>}
               </li>
             ))}

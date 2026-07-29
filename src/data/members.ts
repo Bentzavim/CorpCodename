@@ -2,9 +2,15 @@ import type { Entity } from '../game/types';
 import { ROSTER } from './roster';
 import { matchWard } from './wards';
 
-export type MemberRole = 'Alderman' | 'Common Councillor';
+export type MemberRole = 'Alderman' | 'Alderwoman' | 'Common Councillor';
 
 export interface MemberRecord {
+  /**
+   * The name exactly as the member index prints it, honours and office and all
+   * — e.g. "Sir Alastair John Naisbitt King DL (Alderman)". Cards show
+   * `displayName(name)`; the full string is kept so the record stays faithful to
+   * the source.
+   */
   name: string;
   ward?: string;
   role?: MemberRole;
@@ -48,10 +54,40 @@ export function hasImportedRoster(): boolean {
 export function membersToEntities(records: MemberRecord[]): Entity[] {
   return records.map((m, i) => ({
     id: `member:${slug(m.name)}:${i}`,
-    name: m.name,
+    name: displayName(m.name),
     subtitle: [m.role, m.ward].filter(Boolean).join(' · ') || undefined,
     photo: m.photo,
   }));
+}
+
+/** Offices held, which the card carries as its subtitle rather than in the name. */
+const OFFICE =
+  /\b(alderwoman|alderman|deputy|sheriff|chief\s+commoner|councillor|councilman|councilwoman|cllr\.?)\b/gi;
+
+/**
+ * Post-nominals, as an explicit list rather than an all-caps pattern: initials
+ * and names like "St John" would otherwise be stripped too.
+ */
+const POST_NOMINAL =
+  /\b(KC|QC|MBE|OBE|CBE|DBE|KBE|GBE|BEM|JP|DL|TD|VR|VO|CVO|KCVO|DSO|MC)\b/g;
+
+/** Prefixes that are an office rather than part of the name. */
+const OFFICE_PREFIX = /^(the\s+rt\s+hon\.?\s+|the\s+right\s+honourable\s+|the\s+honourable\s+|the\s+lady\s+mayor,?\s+|the\s+lord\s+mayor,?\s+)+/gi;
+
+/**
+ * The name as it goes on a card: honorifics that are part of how someone is
+ * known (Sir, Dame, Professor, Dr) are kept, while offices and post-nominals are
+ * dropped so 25 of these can be read at a glance on a board.
+ */
+export function displayName(raw: string): string {
+  return raw
+    .replace(OFFICE_PREFIX, '')
+    .replace(/\([^)]*\)/g, ' ') // "(Alderman)", "(Alderman & Sheriff)"
+    .replace(POST_NOMINAL, ' ')
+    .replace(OFFICE, ' ')
+    .replace(/[,&]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 function slug(value: string): string {
@@ -98,12 +134,13 @@ function looksLikeName(line: string): boolean {
 }
 
 function toRecord(rawName: string, ward?: string): MemberRecord {
-  const role: MemberRole = /alder(man|woman)/i.test(rawName)
-    ? 'Alderman'
-    : 'Common Councillor';
-  // Keep honorifics like Sir/Dame, drop the office and the Cllr/Mr noise.
+  const role: MemberRole = /alderwoman/i.test(rawName)
+    ? 'Alderwoman'
+    : /alderman/i.test(rawName)
+      ? 'Alderman'
+      : 'Common Councillor';
+  // Store the name as pasted; displayName() trims it down for the card.
   const name = rawName
-    .replace(/\b(alderwoman|alderman|deputy|councillor|councilman|councilwoman|cllr\.?)\b\s*/gi, '')
     .replace(/^(mr\.?|mrs\.?|miss|ms\.?)\s+/i, '')
     .replace(/\s{2,}/g, ' ')
     .trim();

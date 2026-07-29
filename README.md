@@ -37,37 +37,51 @@ is forced off at every handoff and every new board.
 
 ## The Members roster
 
-**The roster that ships in this repo is incomplete: 8 names, not 125.**
+`src/data/roster.ts` holds the full Court of Common Council — **125 Members: 25
+Aldermen and Alderwomen, one per Ward, and 100 Common Councillors** — transcribed
+from the official
+[member index](https://democracy.cityoflondon.gov.uk/mgMemberIndex.aspx?bcr=1).
+Each game deals 25 of them, so boards stay varied. Nothing needs importing.
 
-The full membership — 25 Aldermen and 100 Common Councillors — is published at
-[democracy.cityoflondon.gov.uk](https://democracy.cityoflondon.gov.uk/mgMemberIndex.aspx?bcr=1).
-That site was not reachable from the sandbox this project was built in, and
-inventing plausible-looking names for real officeholders is worse than shipping
-a short list, so `src/data/roster.ts` contains only members that could actually
-be verified. Until it is filled in, the app opens on an import prompt instead of
-a board.
+Names are stored exactly as the index prints them —
+`Sir Alastair John Naisbitt King DL (Alderman)` — and `displayName()` in
+`src/data/members.ts` is the single place that trims one down for a card
+(`Sir Alastair John Naisbitt King`). Offices and post-nominals come off; Sir,
+Dame, Professor and Dr stay, since that is how these Members are known. The
+office and ward become the card's subtitle instead.
 
-Two ways to complete it:
+### Refreshing it
 
-**1. Paste it in** (no tooling, stays in your browser)
-
-Open the member index, select the list, copy it, and use *Import roster* in the
-app. The parser anchors on the 25 ward names, so it copes with the table view,
-the list view, and `Name, Ward` lines. The result is kept in `localStorage`;
-*Reset to built-in* clears it.
-
-**2. Bake it in** (goes into the repo)
+Either ingester rewrites `roster.ts` wholesale.
 
 ```bash
-npm run scrape:members              # fetches names, wards and portraits
+npm run scrape:members                  # names, wards and portraits
 npm run scrape:members -- --no-photos   # names only, one request
 ```
 
-This rewrites `src/data/roster.ts`. Run it from a machine that can reach the
-portal; it makes ~125 throttled GETs of public pages. Commit the result and the
-board is available to everyone, with no import step.
+Run the scraper from a machine that can reach the portal; it makes ~125
+throttled GETs of public pages.
 
-With all 125 in, each game deals 25 of them, so boards stay varied.
+```bash
+pip install pypdf
+python3 scripts/roster-from-pdf.py Your_Councillors.pdf
+```
+
+The second path is for when the portal is blocked but someone can open it in a
+browser and print the page to PDF — which is how the current roster was built.
+The printout is a five-column card grid, so the parser keys records on column
+and vertical position rather than reading order, anchors each on its member UID,
+and matches wards against the 25 known names. It then refuses to write unless
+the result matches what the index states about itself: 125 Members, 25 wards,
+exactly one Alderman per ward, and at least two Common Councillors alongside.
+No portraits — those only exist on the member pages.
+
+### Importing a different roster
+
+*Import roster* takes text pasted straight off the portal and overrides the
+built-in list for that browser. The parser anchors on the 25 ward names, so it
+copes with the table view, the list view, and `Name, Ward` lines. The result is
+kept in `localStorage`; *Reset to built-in* clears it.
 
 ## Sharing a game
 
@@ -76,8 +90,9 @@ in the URL (`#seed=K7QM2P`). **Share** copies that link. Anyone who opens it get
 the identical board and key card, which is what lets two spymasters run a game
 from different rooms. **New game** rolls a fresh seed.
 
-The board also depends on the roster, so two people sharing a seed need the same
-one: either both import the same paste, or — better — both use a scraped build.
+The board is dealt from the roster, so a shared seed only reproduces for someone
+running the same roster. That is the default; it only diverges if one side has
+imported their own list.
 
 ## Layout
 
@@ -87,7 +102,8 @@ src/
   data/        the member roster, the roster parser, the 25 ward names
   components/  board, cards, scoreboard, clue bar, handoff, log, importer
 scripts/
-  scrape-members.mjs
+  scrape-members.mjs    roster from the live portal
+  roster-from-pdf.py    roster from a print-to-PDF of the same page
 ```
 
 `src/game/` is pure and side-effect free: `createGame`, `giveClue`,
