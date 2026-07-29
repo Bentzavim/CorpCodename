@@ -1,90 +1,79 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Board } from './components/Board';
 import { ClueBar } from './components/ClueBar';
 import { GameLog } from './components/GameLog';
 import { RosterImport } from './components/RosterImport';
 import { Scoreboard } from './components/Scoreboard';
-import { buildDecks, defaultDeckId, isPlayable, MEMBERS_DECK_ID, WARDS_DECK_ID } from './data/decks';
+import { TurnHandoff } from './components/TurnHandoff';
+import { loadRoster, membersToEntities, type MemberRecord } from './data/members';
 import { createGame, giveClue, pass, revealCard } from './game/engine';
 import { normaliseSeed, randomSeed } from './game/rng';
-import { BOARD_SIZE, type Deck, type GameState } from './game/types';
+import { BOARD_SIZE, type GameState } from './game/types';
 
-interface Config {
-  deckId: string;
-  seed: string;
-}
-
-function readHash(decks: Deck[]): Config {
+function readSeed(): string {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  const deckId = params.get('deck');
-  const seed = normaliseSeed(params.get('seed') ?? '');
-  return {
-    deckId: decks.some((d) => d.id === deckId) ? deckId! : defaultDeckId(decks),
-    seed: seed || randomSeed(),
-  };
+  return normaliseSeed(params.get('seed') ?? '') || randomSeed();
 }
 
 export default function App() {
-  // Held in state rather than derived: the Members deck is read from
-  // localStorage, so it has to be rebuilt explicitly after an import.
-  const [decks, setDecks] = useState<Deck[]>(buildDecks);
+  // Held in state rather than derived: the roster is read from localStorage, so
+  // it has to be rebuilt explicitly after an import.
+  const [roster, setRoster] = useState<MemberRecord[]>(loadRoster);
+  const entities = useMemo(() => membersToEntities(roster), [roster]);
+  const playable = entities.length >= BOARD_SIZE;
 
-  const [config, setConfig] = useState<Config>(() => readHash(decks));
+  const [seed, setSeed] = useState<string>(readSeed);
   const [game, setGame] = useState<GameState | null>(null);
   const [spymaster, setSpymaster] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [copied, setCopied] = useState(false);
+  /** Which turn the handoff screen has been dismissed for, e.g. "blue:2". */
+  const [readyFor, setReadyFor] = useState<string | null>(null);
 
-  const deck = decks.find((d) => d.id === config.deckId) ?? decks[0];
-  const playable = isPlayable(deck);
+  // A turn is identified by whose it is plus how many clues have been given, so
+  // each new turn needs its own acknowledgement.
+  const turnKey = game ? `${game.turn}:${game.clues.length}` : '';
+  const needsHandoff =
+    game !== null &&
+    game.winner === null &&
+    game.guessesLeft === null && // between turns, before the next clue
+    game.log.length > 0 && // the opening turn needs no handoff
+    readyFor !== turnKey;
 
-  // Rebuild the board whenever the seed or the deck changes. Same seed + same
-  // deck always yields the same board, which is what makes links shareable.
+  // Rebuild the board whenever the seed or the roster changes. The same seed and
+  // roster always yield the same board, which is what makes links shareable.
   useEffect(() => {
     if (!playable) {
       setGame(null);
       return;
     }
-    setGame(createGame(config.seed, deck.id, deck.entities));
+    setGame(createGame(seed, 'members', entities));
     setSpymaster(false);
-  }, [config.seed, deck, playable]);
+    setReadyFor(null);
+  }, [seed, entities, playable]);
 
   useEffect(() => {
-    const hash = `#deck=${config.deckId}&seed=${config.seed}`;
-    if (window.location.hash !== hash) {
-      window.history.replaceState(null, '', hash);
-    }
-  }, [config]);
+    const hash = `#seed=${seed}`;
+    if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
+  }, [seed]);
 
   // Someone pasting a shared link into the address bar only changes the hash.
   useEffect(() => {
-    const onHashChange = () => {
-      const next = readHash(decks);
-      setConfig((prev) =>
-        prev.deckId === next.deckId && prev.seed === next.seed ? prev : next,
-      );
-    };
+    const onHashChange = () => setSeed((prev) => (prev === readSeed() ? prev : readSeed()));
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, [decks]);
-
-  const newGame = useCallback(() => {
-    setConfig((prev) => ({ ...prev, seed: randomSeed() }));
   }, []);
 
   const shareLink = useCallback(() => {
     const { origin, pathname } = window.location;
-    const url = `${origin}${pathname}#deck=${config.deckId}&seed=${config.seed}`;
-    void navigator.clipboard?.writeText(url).then(
+    void navigator.clipboard?.writeText(`${origin}${pathname}#seed=${seed}`).then(
       () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       },
       () => setCopied(false),
     );
-  }, [config]);
-
-  const membersDeck = decks.find((d) => d.id === MEMBERS_DECK_ID);
+  }, [seed]);
 
   return (
     <div className="app">
@@ -94,54 +83,39 @@ export default function App() {
           <p>Members of the City of London Corporation</p>
         </div>
 
-        <div className="topbar__controls">
-          <label className="field">
-            <span>Deck</span>
-            <select
-              value={config.deckId}
-              onChange={(e) => setConfig((prev) => ({ ...prev, deckId: e.target.value }))}
-            >
-              {decks.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.label} ({d.entities.length})
-                </option>
-              ))}
-            </select>
-          </label>
+        {playable && (
+          <div className="topbar__controls">
+            <label className="field">
+              <span>Seed</span>
+              <input
+                className="field__seed"
+                value={seed}
+                onChange={(e) => setSeed(normaliseSeed(e.target.value))}
+                spellCheck={false}
+                aria-label="Game seed — the same seed gives the same board"
+              />
+            </label>
 
-          <label className="field">
-            <span>Seed</span>
-            <input
-              className="field__seed"
-              value={config.seed}
-              onChange={(e) =>
-                setConfig((prev) => ({ ...prev, seed: normaliseSeed(e.target.value) }))
-              }
-              spellCheck={false}
-              aria-label="Game seed — the same seed gives the same board"
-            />
-          </label>
-
-          <button type="button" className="btn" onClick={shareLink}>
-            {copied ? 'Copied' : 'Share'}
-          </button>
-          <button type="button" className="btn btn--primary" onClick={newGame}>
-            New game
-          </button>
-        </div>
+            <button type="button" className="btn" onClick={shareLink}>
+              {copied ? 'Copied' : 'Share'}
+            </button>
+            <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
+              New game
+            </button>
+          </div>
+        )}
       </header>
 
       {!playable ? (
         <main className="empty">
           <div className="empty__panel">
-            <h2>
-              The {deck.label} deck needs {BOARD_SIZE} cards
-            </h2>
+            <h2>Load the Members roster to play</h2>
             <p>
-              It currently holds <strong>{deck.entities.length}</strong>. The full Court of
-              Common Council — 25 Aldermen and 100 Common Councillors — is published on the
-              Corporation’s democracy portal, but it could not be reached when this build was
-              made, and inventing names for real officeholders was not an option.
+              A board is {BOARD_SIZE} cards and the roster currently holds{' '}
+              <strong>{roster.length}</strong>. The full Court of Common Council — 25 Aldermen
+              and 100 Common Councillors — is published on the Corporation’s democracy portal,
+              but it could not be reached when this build was made, and inventing names for
+              real officeholders was not an option.
             </p>
             <p>Two ways to fill it:</p>
             <ul>
@@ -162,13 +136,6 @@ export default function App() {
               >
                 Import roster
               </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setConfig((prev) => ({ ...prev, deckId: WARDS_DECK_ID }))}
-              >
-                Play the 25 Wards instead
-              </button>
             </div>
           </div>
         </main>
@@ -184,7 +151,8 @@ export default function App() {
               />
               <Board
                 game={game}
-                spymaster={spymaster}
+                // The key card must not survive the handoff to the next team.
+                spymaster={spymaster && !needsHandoff}
                 onReveal={(i) => setGame((g) => (g ? revealCard(g, i) : g))}
               />
             </section>
@@ -192,28 +160,34 @@ export default function App() {
             <aside className="layout__side">
               <button
                 type="button"
-                className={`spytoggle ${spymaster ? 'is-on' : ''}`}
+                className={`spytoggle ${spymaster && !needsHandoff ? 'is-on' : ''}`}
                 onClick={() => setSpymaster((s) => !s)}
-                aria-pressed={spymaster}
+                aria-pressed={spymaster && !needsHandoff}
+                disabled={needsHandoff}
               >
                 <span className="spytoggle__title">
-                  {spymaster ? 'Spymaster view on' : 'Spymaster view'}
+                  {spymaster && !needsHandoff ? 'Spymaster view on' : 'Spymaster view'}
                 </span>
                 <span className="spytoggle__note">
-                  {spymaster ? 'Hide this before passing the screen' : 'Reveals the key card'}
+                  {needsHandoff
+                    ? 'Locked until the handoff'
+                    : spymaster
+                      ? 'Hide this before passing the screen'
+                      : 'Reveals the key card'}
                 </span>
               </button>
 
               <div className="panel">
-                <h2>Deck</h2>
-                <p className="panel__note">{deck.description}</p>
+                <h2>Roster</h2>
+                <p className="panel__note">
+                  {roster.length} Members — {BOARD_SIZE} dealt each game.
+                </p>
                 <button
                   type="button"
                   className="btn btn--ghost"
                   onClick={() => setShowImport(true)}
                 >
                   Import roster
-                  {membersDeck ? ` (${membersDeck.entities.length} members)` : ''}
                 </button>
               </div>
 
@@ -226,14 +200,24 @@ export default function App() {
         )
       )}
 
+      {game && needsHandoff && !showImport && (
+        <TurnHandoff
+          team={game.turn}
+          onReady={() => {
+            setSpymaster(false);
+            setReadyFor(turnKey);
+          }}
+        />
+      )}
+
       {showImport && (
         <RosterImport
-          currentCount={membersDeck?.entities.length ?? 0}
+          currentCount={roster.length}
           onClose={() => setShowImport(false)}
           onImported={() => {
             setShowImport(false);
-            setDecks(buildDecks());
-            setConfig((prev) => ({ ...prev, deckId: MEMBERS_DECK_ID, seed: randomSeed() }));
+            setRoster(loadRoster());
+            setSeed(randomSeed());
           }}
         />
       )}
