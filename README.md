@@ -16,8 +16,27 @@ npm run build      # typecheck + production build into dist/
 npm run preview    # serve the production build
 ```
 
-It is a static single-page app with no backend. Deploying to Vercel needs no
-configuration — the Vite preset builds `dist/` and serves it.
+It is a static single-page app with no backend.
+
+## Deploying
+
+Live at **https://corp-codename.vercel.app**, built from this repo's default
+branch on every push.
+
+Vercel needs no setup beyond importing the repo: its Vite preset already runs
+`npm run build` and serves `dist/`. There are no environment variables, and the
+seed lives in the URL *hash*, so no SPA rewrite rule is needed either — a deep
+link never reaches the server as a path.
+
+`vercel.json` exists only to cache the portraits. They live in `public/members/`
+under stable, unhashed filenames, so without it every card image revalidates on
+each load; with it they come from disk cache for a day and refresh in the
+background after that.
+
+Anywhere else that serves static files will do. The one thing to change is
+hosting under a sub-path, as GitHub Pages does — that needs
+`base: '/CorpCodename/'` in `vite.config.ts`. Portrait URLs already resolve
+against `import.meta.env.BASE_URL`, so they follow automatically.
 
 ## Turn by turn
 
