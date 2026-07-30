@@ -1,30 +1,31 @@
-import type { BoardCard } from '../game/types';
+import type { CardKind } from '../game/types';
+import type { PublicCard } from '../room/types';
 import { Avatar } from './Avatar';
 
 interface Props {
-  card: BoardCard;
+  card: PublicCard;
   index: number;
-  spymaster: boolean;
   disabled: boolean;
   onReveal: (index: number) => void;
 }
 
-const KIND_LABEL: Record<BoardCard['kind'], string> = {
+const KIND_LABEL: Record<CardKind, string> = {
   red: 'Red',
   blue: 'Blue',
   neutral: 'Bystander',
   assassin: 'Assassin',
 };
 
-export function Card({ card, index, spymaster, disabled, onReveal }: Props) {
+export function Card({ card, index, disabled, onReveal }: Props) {
   const { entity, kind, revealed } = card;
-  // The key card is visible to the spymaster, and to everyone once turned over.
-  const showKind = revealed || spymaster;
+  // `kind` is null whenever the viewer is not allowed to know it, so there is
+  // nothing here to decide: if it arrived, it may be shown.
+  const showKind = kind !== null;
 
   const classes = [
     'card',
     revealed && 'card--revealed',
-    spymaster && !revealed && 'card--peek',
+    showKind && !revealed && 'card--peek',
     showKind && `card--${kind}`,
   ]
     .filter(Boolean)
@@ -37,14 +38,14 @@ export function Card({ card, index, spymaster, disabled, onReveal }: Props) {
       disabled={disabled || revealed}
       onClick={() => onReveal(index)}
       aria-label={
-        revealed
+        revealed && kind
           ? `${entity.name} — already turned over, ${KIND_LABEL[kind]}`
           : `Turn over ${entity.name}`
       }
     >
       <Avatar entity={entity} />
       <span className="card__name">{entity.name}</span>
-      {showKind && <span className="card__kind">{KIND_LABEL[kind]}</span>}
+      {kind && <span className="card__kind">{KIND_LABEL[kind]}</span>}
     </button>
   );
 }

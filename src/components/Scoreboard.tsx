@@ -1,16 +1,16 @@
-import { remaining } from '../game/engine';
-import type { GameState, Team } from '../game/types';
+import type { Team } from '../game/types';
+import type { PublicGame } from '../room/types';
 
 const TEAM_NAME: Record<Team, string> = {
   red: 'Red Benches',
   blue: 'Blue Benches',
 };
 
-export function Scoreboard({ game }: { game: GameState }) {
+export function Scoreboard({ game }: { game: PublicGame }) {
   return (
     <div className="scoreboard">
       {(['red', 'blue'] as Team[]).map((team) => {
-        const left = remaining(game.cards, team);
+        const left = game.remaining[team];
         const active = !game.winner && game.turn === team;
         const won = game.winner === team;
         return (

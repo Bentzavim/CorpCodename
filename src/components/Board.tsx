@@ -1,15 +1,16 @@
-import type { GameState } from '../game/types';
+import type { PublicGame } from '../room/types';
 import { Card } from './Card';
 
 interface Props {
-  game: GameState;
-  spymaster: boolean;
+  game: PublicGame;
+  /** False for a spymaster online, and for anyone between turns locally. */
+  canGuess?: boolean;
   onReveal: (index: number) => void;
 }
 
-export function Board({ game, spymaster, onReveal }: Props) {
+export function Board({ game, canGuess = true, onReveal }: Props) {
   // Guessing is only open once the spymaster has given a clue for this turn.
-  const locked = game.winner !== null || game.guessesLeft === null;
+  const locked = !canGuess || game.winner !== null || game.guessesLeft === null;
 
   return (
     <div className="board" role="grid" aria-label="Codenames board">
@@ -18,7 +19,6 @@ export function Board({ game, spymaster, onReveal }: Props) {
           key={card.entity.id}
           card={card}
           index={i}
-          spymaster={spymaster}
           disabled={locked}
           onReveal={onReveal}
         />

@@ -5,9 +5,13 @@ import { GameLog } from './components/GameLog';
 import { RosterImport } from './components/RosterImport';
 import { Scoreboard } from './components/Scoreboard';
 import { TurnHandoff } from './components/TurnHandoff';
-import { loadRoster, membersToEntities, type MemberRecord } from './data/members';
+import { membersToEntities, type MemberRecord } from './data/members';
+import { loadRoster } from './data/rosterStorage';
 import { ROSTER_FETCHED_AT, ROSTER_SOURCE } from './data/roster';
 import { createGame, giveClue, pass, revealCard } from './game/engine';
+import { localPublicGame } from './room/local';
+import { OnlineRoom } from './online/OnlineRoom';
+import { useHashRoom } from './online/useHashRoom';
 import { normaliseSeed, randomSeed } from './game/rng';
 import { BOARD_SIZE, type GameState } from './game/types';
 
@@ -17,6 +21,40 @@ function readSeed(): string {
 }
 
 export default function App() {
+  const [roomCode, setRoomCode] = useHashRoom();
+  const [wantOnline, setWantOnline] = useState(false);
+
+  if (roomCode !== null || wantOnline) {
+    return (
+      <div className="app">
+        <Brand />
+        <OnlineRoom
+          code={roomCode}
+          onEnterRoom={setRoomCode}
+          onLeave={() => {
+            setRoomCode(null);
+            setWantOnline(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  return <LocalGame onGoOnline={() => setWantOnline(true)} />;
+}
+
+function Brand() {
+  return (
+    <header className="topbar topbar--slim">
+      <div className="topbar__brand">
+        <h1>Corp Codenames</h1>
+        <p>Members of the City of London Corporation</p>
+      </div>
+    </header>
+  );
+}
+
+function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
   // Held in state rather than derived: the roster is read from localStorage, so
   // it has to be rebuilt explicitly after an import.
   const [roster, setRoster] = useState<MemberRecord[]>(loadRoster);
@@ -40,6 +78,10 @@ export default function App() {
     game.guessesLeft === null && // between turns, before the next clue
     game.log.length > 0 && // the opening turn needs no handoff
     readyFor !== turnKey;
+
+  // One view type for both modes: here the spymaster toggle decides what the
+  // cards carry, exactly where the server's role check decides it online.
+  const view = game ? localPublicGame(game, spymaster && !needsHandoff) : null;
 
   // Rebuild the board whenever the seed or the roster changes. The same seed and
   // roster always yield the same board, which is what makes links shareable.
@@ -117,6 +159,14 @@ export default function App() {
             <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
               New game
             </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={onGoOnline}
+              title="Everyone on their own screen, with the key card kept on the server"
+            >
+              Play online
+            </button>
           </div>
         )}
       </header>
@@ -155,19 +205,17 @@ export default function App() {
           </div>
         </main>
       ) : (
-        game && (
+        game && view && (
           <main className="layout">
             <section className="layout__main">
-              <Scoreboard game={game} />
+              <Scoreboard game={view} />
               <ClueBar
-                game={game}
+                game={view}
                 onClue={(word, count) => setGame((g) => (g ? giveClue(g, word, count) : g))}
                 onPass={() => setGame((g) => (g ? pass(g) : g))}
               />
               <Board
-                game={game}
-                // The key card must not survive the handoff to the next team.
-                spymaster={spymaster && !needsHandoff}
+                game={view}
                 onReveal={(i) => setGame((g) => (g ? revealCard(g, i) : g))}
               />
             </section>

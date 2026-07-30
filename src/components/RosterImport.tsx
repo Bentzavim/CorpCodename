@@ -1,13 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BOARD_SIZE } from '../game/types';
-import {
-  clearRoster,
-  displayName,
-  hasImportedRoster,
-  parseRoster,
-  saveRoster,
-  type MemberRecord,
-} from '../data/members';
+import { displayName, parseRoster, type MemberRecord } from '../data/members';
+import { clearRoster, hasImportedRoster, saveRoster } from '../data/rosterStorage';
 import { ROSTER_SOURCE } from '../data/roster';
 
 interface Props {

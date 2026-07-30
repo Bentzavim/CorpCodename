@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import type { Entity } from '../game/types';
 
+/**
+ * Portraits taken from the printout live in `public/` and are stored as paths
+ * relative to it, so they follow the app wherever it is deployed — including
+ * under a sub-path. The scraper stores absolute portal URLs instead, and the
+ * artifact build swaps in data URIs; both are left alone.
+ */
+function resolvePhotoUrl(photo: string): string {
+  if (/^(https?:)?\/\/|^data:/i.test(photo)) return photo;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return `${base}/${photo.replace(/^\//, '')}`;
+}
+
 /** Stable 32-bit hash so an entity always gets the same generated crest. */
 function hash(value: string): number {
   let h = 2166136261;
@@ -28,7 +40,7 @@ export function Avatar({ entity }: { entity: Entity }) {
     return (
       <img
         className="avatar avatar--photo"
-        src={entity.photo}
+        src={resolvePhotoUrl(entity.photo)}
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}

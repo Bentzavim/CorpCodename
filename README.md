@@ -12,11 +12,14 @@ one wrong, run out of guesses, or hit the assassin and lose on the spot.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
+npm run dev:api    # the /api handlers, for online play (separate terminal)
 npm run build      # typecheck + production build into dist/
 npm run preview    # serve the production build
 ```
 
-It is a static single-page app with no backend.
+`dev:api` runs the very same handlers Vercel runs from `api/`, on a plain Node
+server that Vite proxies to. Pass-and-play needs no server at all — only online
+rooms do.
 
 ## Deploying
 
@@ -24,19 +27,23 @@ Live at **https://corp-codename.vercel.app**, built from this repo's default
 branch on every push.
 
 Vercel needs no setup beyond importing the repo: its Vite preset already runs
-`npm run build` and serves `dist/`. There are no environment variables, and the
-seed lives in the URL *hash*, so no SPA rewrite rule is needed either — a deep
-link never reaches the server as a path.
+`npm run build` and serves `dist/`, and the two files in `api/` become functions
+on their own. The seed and the room code live in the URL *hash*, so no SPA
+rewrite rule is needed — a shared link never reaches the server as a path.
+
+Online rooms want one environment variable pair; see
+[Rooms need somewhere to live](#rooms-need-somewhere-to-live).
 
 `vercel.json` exists only to cache the portraits. They live in `public/members/`
 under stable, unhashed filenames, so without it every card image revalidates on
 each load; with it they come from disk cache for a day and refresh in the
 background after that.
 
-Anywhere else that serves static files will do. The one thing to change is
-hosting under a sub-path, as GitHub Pages does — that needs
-`base: '/CorpCodename/'` in `vite.config.ts`. Portrait URLs already resolve
-against `import.meta.env.BASE_URL`, so they follow automatically.
+Anywhere else that serves static files will do for pass-and-play, which needs no
+backend at all; online rooms need somewhere to run `api/`. Hosting under a
+sub-path, as GitHub Pages does, additionally needs `base: '/CorpCodename/'` in
+`vite.config.ts` — portrait URLs already resolve against
+`import.meta.env.BASE_URL`, so they follow automatically.
 
 ## Turn by turn
 
@@ -57,6 +64,58 @@ The game walks through turns rather than leaving the board open:
 
 **Spymaster view** tints every card with its true colour. It is per device and
 is forced off at every handoff and every new board.
+
+## Playing online
+
+**Play online** opens a room with a four-letter code. Share the link, everyone
+picks a bench and a seat, and the host deals.
+
+Each player gets their own screen showing only what their seat is entitled to:
+
+- **Spymasters** see the key card — both of them see the same one, as in the box.
+- **Operatives** see colours only on cards already turned over. The rest of the
+  key card is not hidden in their browser, it is never sent to it.
+- Only the spymaster on turn can give a clue; only that team's operatives can
+  turn cards over. A spymaster cannot touch the board at all.
+
+Reload, close the tab, or lose signal and you come back to the same seat — the
+room is in the URL and your identity is in `localStorage`.
+
+### How it holds up
+
+Pass-and-play could keep the whole board in the browser because the key card was
+on the table anyway. Online it cannot: the seed alone reproduces the entire key
+card, so it stays on the server and is never serialised to anyone. `publicRoom()`
+in `src/room/view.ts` is the only way state reaches a client, and it builds each
+card field by field rather than trimming a copy of the real one — a spread plus a
+`delete` is one careless edit from putting the key card on the wire.
+
+The engine knew only about turns; over a network "may *this* player do this?" is
+a separate question, asked in one place in `src/room/actions.ts`.
+
+### Transport
+
+Actions go up as ordinary `POST`s to `/api/room`; state comes back down a
+Server-Sent Events stream from `/api/stream`. SSE needs no protocol upgrade, so
+it runs on an ordinary serverless function, and `EventSource` reconnects by
+itself when the platform closes a long request — which it will, so the stream
+closes itself at 50s and the client resumes from its last version.
+
+### Rooms need somewhere to live
+
+A serverless function forgets everything between requests, so rooms need a store.
+
+Without one the app falls back to **in-memory**, which works locally and for a
+single instance, but breaks as soon as the platform runs a second one: two
+players get two different rooms, or a room seems to vanish. Fine for `npm run
+dev`; **not fine in production**.
+
+To fix it, add a Redis store from the Vercel dashboard — Marketplace → any Redis
+provider → connect to the project. That sets `KV_REST_API_URL` and
+`KV_REST_API_TOKEN`, which is all the code looks for. Redeploy and it switches
+over on its own. `POST /api/room {"op":"health"}` reports which is in use.
+
+Rooms expire 12 hours after their last request either way.
 
 ## The Members roster
 
@@ -133,8 +192,12 @@ imported their own list.
 ```
 src/
   game/        rules engine — seeded RNG, board generation, turn logic (no React)
+  room/        online play: what a client may see, and who may act
+  online/      lobby, join screen, the room connection
   data/        the member roster, the roster parser, the 25 ward names
   components/  board, cards, scoreboard, clue bar, handoff, log, importer
+server/        the room store (memory or Redis) — server-only, never bundled
+api/           Vercel functions: /api/room and /api/stream
 scripts/
   scrape-members.mjs    roster from the live portal
   roster-from-pdf.py    roster from a print-to-PDF of the same page

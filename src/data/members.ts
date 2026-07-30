@@ -19,55 +19,24 @@ export interface MemberRecord {
 }
 
 /**
- * The roster baked into the build. Ships as a partial, verified-only seed and is
- * replaced wholesale by `npm run scrape:members`. See src/data/roster.ts.
- *
- * A roster imported in the browser (localStorage) takes precedence over this.
+ * The roster baked into the build, replaced wholesale by
+ * `npm run scrape:members`. See src/data/roster.ts. A roster imported in the
+ * browser takes precedence — see ./rosterStorage.ts, which is browser-only and
+ * deliberately kept out of this module so the server can import it.
  */
 export const SEED_MEMBERS: MemberRecord[] = ROSTER;
 
-const STORAGE_KEY = 'corpcodename:roster:v1';
-
-export function loadRoster(): MemberRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return SEED_MEMBERS;
-    const parsed = JSON.parse(raw) as MemberRecord[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SEED_MEMBERS;
-  } catch {
-    return SEED_MEMBERS;
-  }
-}
-
-export function saveRoster(records: MemberRecord[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
-
-export function clearRoster(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-export function hasImportedRoster(): boolean {
-  return localStorage.getItem(STORAGE_KEY) !== null;
-}
-
+/**
+ * Deliberately free of anything browser-only: the server builds boards from the
+ * same roster, so this has to run under Node too. Portrait paths stay as stored
+ * and are resolved where they are rendered — see resolvePhotoUrl.
+ */
 export function membersToEntities(records: MemberRecord[]): Entity[] {
   return records.map((m, i) => ({
     id: `member:${slug(m.name)}:${i}`,
     name: displayName(m.name),
-    photo: resolvePhoto(m.photo),
+    photo: m.photo,
   }));
-}
-
-/**
- * Portraits taken from the printout are written into `public/` and stored as
- * paths relative to it, so they follow the app wherever it is deployed. The
- * scraper stores absolute portal URLs instead; those are left alone.
- */
-function resolvePhoto(photo?: string): string | undefined {
-  if (!photo) return undefined;
-  if (/^(https?:)?\/\/|^data:/i.test(photo)) return photo;
-  return import.meta.env.BASE_URL.replace(/\/$/, '') + '/' + photo.replace(/^\//, '');
 }
 
 /** Offices, which belong to the record rather than to the name on the card. */

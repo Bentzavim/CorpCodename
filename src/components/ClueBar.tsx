@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameState } from '../game/types';
+import type { PublicGame } from '../room/types';
 import { TEAM_NAME } from './Scoreboard';
 
 interface Props {
-  game: GameState;
+  game: PublicGame;
   onClue: (word: string, count: number | null) => void;
   onPass: () => void;
+  /** Online, only the team on turn gets the controls; everyone else watches. */
+  canClue?: boolean;
+  canGuess?: boolean;
+  /** Shown in place of the controls when this player is only watching. */
+  watching?: string;
 }
 
 /** A clue is one word: no spaces, though hyphens and apostrophes are fine. */
@@ -13,7 +18,14 @@ function isOneWord(value: string): boolean {
   return /^\S+$/.test(value.trim());
 }
 
-export function ClueBar({ game, onClue, onPass }: Props) {
+export function ClueBar({
+  game,
+  onClue,
+  onPass,
+  canClue = true,
+  canGuess = true,
+  watching,
+}: Props) {
   const [word, setWord] = useState('');
   const [count, setCount] = useState('1');
   const [unlimited, setUnlimited] = useState(false);
@@ -36,6 +48,15 @@ export function ClueBar({ game, onClue, onPass }: Props) {
   }
 
   const current = game.clues[game.clues.length - 1];
+
+  if (awaitingClue && !canClue) {
+    return (
+      <div className={`cluebar cluebar--${game.turn}`}>
+        <span className="cluebar__label">{TEAM_NAME[game.turn]} spymaster</span>
+        <span className="cluebar__waiting">{watching ?? 'is thinking of a clue…'}</span>
+      </div>
+    );
+  }
 
   if (awaitingClue) {
     const typed = word.trim();
@@ -102,7 +123,7 @@ export function ClueBar({ game, onClue, onPass }: Props) {
     );
   }
 
-  const uncapped = game.guessesLeft !== null && !Number.isFinite(game.guessesLeft);
+  const uncapped = game.guessesLeft === 'unlimited';
 
   return (
     <div className={`cluebar cluebar--${game.turn}`}>
@@ -117,9 +138,13 @@ export function ClueBar({ game, onClue, onPass }: Props) {
           ? 'unlimited guesses'
           : `${game.guessesLeft} ${game.guessesLeft === 1 ? 'guess' : 'guesses'} left`}
       </span>
-      <button type="button" className="btn" onClick={onPass}>
-        End turn
-      </button>
+      {canGuess ? (
+        <button type="button" className="btn" onClick={onPass}>
+          End turn
+        </button>
+      ) : (
+        watching && <span className="cluebar__waiting">{watching}</span>
+      )}
     </div>
   );
 }
