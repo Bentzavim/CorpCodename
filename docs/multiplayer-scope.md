@@ -124,25 +124,53 @@ host. Then in-game: who is connected, whose turn, a disconnect notice.
 
 ### 5. Transport
 
-Three options, with a recommendation.
+The requirement is not "WebSockets". It is two things:
 
-| | How | Latency | Ops | Fits |
-| --- | --- | --- | --- | --- |
-| **A. Durable Objects** *(recommended)* | One object per room, WebSocket built in, state lives in the object | real-time | one `wrangler deploy` | Cloudflare Pages |
-| **B. Serverless + Redis** | Vercel functions, room state in Upstash, clients poll ~1s | 1–2s | two services | current Vercel setup |
-| **C. Host-authoritative P2P** | WebRTC, one browser is the server | real-time | signalling server still needed | nothing, really |
+- **push**, so a guess appears on five screens at once rather than up to a poll
+  interval later;
+- **state that outlives a request**, because a serverless function forgets
+  everything between invocations and a room has to persist across all of them.
 
-**A** is the recommendation. A room is exactly one object with one state and a
-handful of sockets, which is the shape Durable Objects are for — no separate
-database, no polling, no cache invalidation. The engine drops in unmodified.
+Those are separable, and conflating them is what makes this look like it needs a
+particular host. It does not.
 
-**B** is the fallback if staying on Vercel is a hard requirement. It works, but
-polling makes "your team just guessed" arrive up to a second late, which is felt
-in a game where people are talking over it.
+| | Push | Room state | Notes |
+| --- | --- | --- | --- |
+| **A. Vercel + SSE + Redis** *(recommended)* | `EventSource` stream per player | Upstash/Vercel KV, pub/sub to fan out | Stays on Vercel |
+| **B. Vercel + managed realtime** | Ably / Pusher / Supabase Realtime | same | Fewer moving parts, another vendor |
+| **C. Cloudflare Durable Objects** | WebSocket, built in | the object itself | Tidiest, but moves hosts |
+| **D. Host-authoritative P2P** | WebRTC | host's browser | Reject — see below |
 
-**C** should be rejected: the host can read the key card, and closing their tab
-takes the game with it. It also still needs a server for signalling, so it does
-not even buy the thing it appears to buy.
+**A is the recommendation, and it stays on Vercel.** Actions go client→server as
+ordinary `POST`s; state changes come back server→client on a Server-Sent Events
+stream. SSE is one-way, which is exactly the shape here — a turn-based game with
+bursty, low-volume traffic and a clear request/broadcast split. It needs no
+protocol upgrade, so nothing about Vercel's function model is in the way, and
+`EventSource` reconnects on its own.
+
+Two things to verify against current Vercel limits before building, because both
+have moved and neither is worth guessing at:
+
+- **Function max duration.** An SSE stream is one long-lived invocation, so it
+  will be cut at the platform ceiling and have to reconnect. Fine — `EventSource`
+  does that automatically and the client re-syncs from a state version number —
+  but pick the heartbeat and resume logic to match the real ceiling.
+- **Fan-out across instances.** Two players may be served by different
+  instances, so a broadcast cannot be an in-memory loop. Redis pub/sub carries
+  it. This is the reason the room state store is not optional.
+
+**B** trades a dependency for a vendor: the realtime service handles fan-out,
+reconnect and presence, and presence is fiddly enough by hand that this is a
+fair trade if the free tier fits.
+
+**C** remains the tidiest architecture — one object per room holds both the
+state and the sockets, so there is no separate store and no fan-out problem at
+all. It is not worth changing hosts for on its own; it is the answer only if
+Cloudflare is wanted for other reasons.
+
+**D** should be rejected on correctness, not taste: the host's browser holds the
+key card, so the host can read it. It also still needs a signalling server, so it
+does not even avoid the server it appears to avoid.
 
 ## The artifact stays local-only
 
@@ -179,9 +207,9 @@ Against ~1,300 lines of existing source:
 | Phase | New code | Notes |
 | --- | --- | --- |
 | 1 Redaction + auth | ~150 lines + tests | Pure functions, heavily tested |
-| 2 Server + transport | ~250 lines | Worker, socket handling, deploy config |
-| 3 Lobby UI | ~350 lines | 3–4 components, plus client socket state |
-| 4 Reconnect | ~100 lines | Both ends |
+| 2 Server + transport | ~300 lines | Route handlers, SSE stream, Redis pub/sub |
+| 3 Lobby UI | ~350 lines | 3–4 components, plus client connection state |
+| 4 Reconnect | ~120 lines | Both ends, plus stream resume |
 | 5 Polish | ~150 lines | |
 
 Call it 1,000 lines and a doubling of the app's surface area — the first
@@ -192,9 +220,10 @@ deployment story, not just the code.
 
 These change the shape of the work and need answering first.
 
-1. **Where does it deploy?** The recommendation (Durable Objects) means
-   Cloudflare. Staying on Vercel means option B and polling latency. This is the
-   biggest fork.
+1. **Realtime by hand, or bought in?** Transport A (SSE + Redis pub/sub) keeps
+   everything in one repo with no extra vendor; B hands fan-out, reconnect and
+   presence to Ably or similar. Presence is the fiddliest part of doing it by
+   hand, so this is a fair place to spend a dependency. Both stay on Vercel.
 2. **Custom rosters in online rooms?** Everyone has the built-in 125 bundled, so
    the server sends ids only. A host with an imported roster breaks that — either
    the room uploads the roster, or imports stay a local-play feature.
