@@ -110,18 +110,28 @@ single instance, but breaks as soon as the platform runs a second one: two
 players get two different rooms, or a room seems to vanish. Fine for `npm run
 dev`; **not fine in production**.
 
-`GET /api/room` in a browser answers this and confirms the functions deployed
-at all:
+**To fix it:** Vercel dashboard → **Storage** → add a Redis (Upstash is the
+usual one) → connect it to this project → redeploy. Nothing to configure: the
+integration sets the variables and the store switches over on its own.
+
+`GET /api/room` in a browser reports what the deployment can actually see, which
+is the quickest way to tell a missing integration from a half-connected one:
 
 ```json
-{ "ok": true, "store": "memory", "node": "v22.x", "time": "…" }
+{ "ok": true, "store": "redis", "found": ["KV_REST_API_URL", "KV_REST_API_TOKEN"] }
 ```
 
-To fix it, add a Redis store from the Vercel dashboard — Marketplace → any Redis
-provider → connect to the project. That sets `KV_REST_API_URL` and
-`KV_REST_API_TOKEN`, which is all the code looks for. Redeploy and `store` reads `redis`.
+Variable *names* only — never values. When it still says `memory` it says why:
+half a pair set, or a `REDIS_URL` connection string from a provider that offers
+TCP but not the REST API this store speaks.
 
-Rooms expire 12 hours after their last request either way.
+Because REST has no persistent subscription, each connected player polls their
+own room — briskly for a few seconds after something happens, then easing off to
+2.5s while the table thinks. A four-player game costs roughly a couple of
+thousand Redis commands, so a free tier's daily allowance is worth an eye if you
+play a lot; a flat fast poll would have spent that on a single game.
+
+Rooms expire 12 hours after their last request, in either store.
 
 ## The Members roster
 

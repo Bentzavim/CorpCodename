@@ -7,6 +7,7 @@ import {
   newPlayerId,
   newRoomCode,
   storeKind,
+  storeDiagnosis,
 } from '../server/store.js';
 import { publicRoom } from '../src/room/view.js';
 import type { RoomAction } from '../src/room/types.js';
@@ -71,7 +72,7 @@ export default async function handler(req: Req, res: Res) {
   if (req.method === 'GET') {
     return send(res, 200, {
       ok: true,
-      store: storeKind(),
+      ...storeDiagnosis(),
       node: process.version,
       time: new Date().toISOString(),
     });

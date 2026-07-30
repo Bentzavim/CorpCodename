@@ -101,13 +101,63 @@ interface RedisConfig {
   token: string;
 }
 
+/**
+ * Vercel's Redis integrations set these under a few different names depending on
+ * which provider was picked, so check the lot rather than one.
+ */
+const URL_VARS = ['KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL', 'REDIS_REST_API_URL'] as const;
+const TOKEN_VARS = ['KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN', 'REDIS_REST_API_TOKEN'] as const;
+
 export function redisConfigFromEnv(env: Record<string, string | undefined>): RedisConfig | null {
-  const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
-  const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
+  const url = URL_VARS.map((k) => env[k]).find(Boolean);
+  const token = TOKEN_VARS.map((k) => env[k]).find(Boolean);
   return url && token ? { url, token } : null;
 }
 
-export function createRedisStore(config: RedisConfig, poll = 700): RoomStore {
+/**
+ * What the deployment can see, for the health endpoint. Values are never
+ * included — only whether a name is set — so this is safe to expose.
+ */
+export function storeDiagnosis(env: Record<string, string | undefined> = process.env): {
+  store: 'redis' | 'memory';
+  found: string[];
+  hint?: string;
+} {
+  const found = [...URL_VARS, ...TOKEN_VARS].filter((k) => env[k]);
+  if (redisConfigFromEnv(env)) return { store: 'redis', found };
+
+  // A TCP-only connection string is the usual near-miss: the provider is
+  // connected, but this store speaks the REST API, which needs its own pair.
+  const tcpOnly = ['REDIS_URL', 'KV_URL', 'DATABASE_URL'].filter((k) => env[k]);
+  return {
+    store: 'memory',
+    found,
+    hint: found.length
+      ? 'Half the pair is set — both a REST URL and a REST token are needed.'
+      : tcpOnly.length
+        ? `Found ${tcpOnly.join(', ')}, which is a TCP connection string. This needs the ` +
+          'REST pair (KV_REST_API_URL and KV_REST_API_TOKEN) that Upstash-backed ' +
+          'integrations also set.'
+        : 'No Redis environment variables are set, so rooms are kept in memory ' +
+          'and will not survive a second instance.',
+  };
+}
+
+/**
+ * How often a stream re-reads its room, in milliseconds: briskly just after
+ * something happened, then easing off while a table sits thinking.
+ *
+ * The REST API has no persistent subscription, so every connected player polls.
+ * At a flat 700ms a table of eight would be twenty reads a second, all day, most
+ * of them returning the same room — enough to exhaust a free tier's request
+ * allowance in an afternoon. Codenames is mostly silence punctuated by a flurry,
+ * so backing off while idle costs nothing anybody notices and saves most of it.
+ */
+const POLL_BUSY_MS = 400;
+const POLL_IDLE_MS = 2500;
+const POLL_RAMP_MS = 8000;
+
+export function createRedisStore(config: RedisConfig): RoomStore {
   const key = (code: string) => `room:${code}`;
 
   async function command(...args: (string | number)[]): Promise<unknown> {
@@ -166,18 +216,21 @@ export function createRedisStore(config: RedisConfig, poll = 700): RoomStore {
     watch(code, onChange) {
       let stopped = false;
       let lastVersion = -1;
+      let lastChange = Date.now();
       const tick = async () => {
         while (!stopped) {
           try {
             const room = await read(code);
             if (room && room.version !== lastVersion) {
               lastVersion = room.version;
+              lastChange = Date.now();
               onChange(room);
             }
           } catch {
             // A blip should not kill the stream; the next tick tries again.
           }
-          await new Promise((r) => setTimeout(r, poll));
+          const quiet = Date.now() - lastChange > POLL_RAMP_MS;
+          await new Promise((r) => setTimeout(r, quiet ? POLL_IDLE_MS : POLL_BUSY_MS));
         }
       };
       void tick();
