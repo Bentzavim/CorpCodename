@@ -355,6 +355,49 @@ a {
   margin-left: auto;
 }
 
+.cluebar__infinity {
+  width: 2.4rem;
+  padding: 0.5rem 0;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.cluebar__infinity:hover {
+  color: var(--ink);
+  border-color: #43506c;
+}
+
+.cluebar__infinity.is-on {
+  color: #1a1508;
+  background: var(--gold);
+  border-color: #a9871c;
+}
+
+.cluebar__infinity:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Sits on its own row under the controls so the bar does not jump as it
+   appears and disappears. */
+.cluebar__hint {
+  flex: 1 0 100%;
+  min-height: 1.1em;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.cluebar__word[aria-invalid='true'] {
+  border-color: var(--red);
+}
+
 /* --- board ----------------------------------------------------------------- */
 
 .board {

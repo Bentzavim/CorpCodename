@@ -23,12 +23,16 @@ configuration — the Vite preset builds `dist/` and serves it.
 
 The game walks through turns rather than leaving the board open:
 
-1. The spymaster gives a one-word clue and a number. Nothing can be turned over
-   before that.
-2. Their team gets that many guesses plus one. The counter is live.
-3. A correct card lets them carry on; a bystander, the other team's card, or
-   running out of guesses ends the turn. The assassin ends the game.
-4. A **handoff screen** covers the board between turns. The key card is hidden
+1. The spymaster gives a clue and a number. It has to be **one word** — the form
+   will not submit two. Nothing can be turned over before a clue is in.
+2. Their team gets that many guesses plus one, counted down live.
+3. **Zero and ∞ lift the cap.** Saying zero ("none of my cards relate to this")
+   or pressing ∞ ("go after what's left from earlier clues") lets the team keep
+   guessing until they get one wrong or stop, as the rules have it.
+4. A correct card lets them carry on; a bystander, the other team's card, or
+   running out of guesses ends the turn. The assassin ends the game. The other
+   team's card is credited to that team, so a bad guess can lose you the game.
+5. A **handoff screen** covers the board between turns. The key card is hidden
    and the spymaster toggle is locked until the incoming spymaster confirms, so
    a shared screen cannot leak the previous team's view.
 

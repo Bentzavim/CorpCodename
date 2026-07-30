@@ -4,13 +4,19 @@ import { TEAM_NAME } from './Scoreboard';
 
 interface Props {
   game: GameState;
-  onClue: (word: string, count: number) => void;
+  onClue: (word: string, count: number | null) => void;
   onPass: () => void;
+}
+
+/** A clue is one word: no spaces, though hyphens and apostrophes are fine. */
+function isOneWord(value: string): boolean {
+  return /^\S+$/.test(value.trim());
 }
 
 export function ClueBar({ game, onClue, onPass }: Props) {
   const [word, setWord] = useState('');
   const [count, setCount] = useState('1');
+  const [unlimited, setUnlimited] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const awaitingClue = !game.winner && game.guessesLeft === null;
@@ -32,15 +38,19 @@ export function ClueBar({ game, onClue, onPass }: Props) {
   const current = game.clues[game.clues.length - 1];
 
   if (awaitingClue) {
+    const typed = word.trim();
+    const valid = typed !== '' && isOneWord(typed);
+
     return (
       <form
         className={`cluebar cluebar--${game.turn}`}
         onSubmit={(e) => {
           e.preventDefault();
-          if (!word.trim()) return;
-          onClue(word, Number(count) || 0);
+          if (!valid) return;
+          onClue(typed, unlimited ? null : Number(count) || 0);
           setWord('');
           setCount('1');
+          setUnlimited(false);
         }}
       >
         <label className="cluebar__label" htmlFor="clue-word">
@@ -54,33 +64,58 @@ export function ClueBar({ game, onClue, onPass }: Props) {
           onChange={(e) => setWord(e.target.value)}
           placeholder="one word"
           autoComplete="off"
+          aria-invalid={typed !== '' && !valid}
+          aria-describedby="clue-hint"
         />
         <input
           className="cluebar__count"
           type="number"
           min={0}
           max={9}
-          value={count}
+          value={unlimited ? '' : count}
+          disabled={unlimited}
           onChange={(e) => setCount(e.target.value)}
           aria-label="Number of cards this clue points to"
         />
-        <button type="submit" className="btn btn--primary" disabled={!word.trim()}>
+        <button
+          type="button"
+          className={`cluebar__infinity ${unlimited ? 'is-on' : ''}`}
+          onClick={() => setUnlimited((u) => !u)}
+          aria-pressed={unlimited}
+          title="Unlimited — send them after cards left from earlier clues"
+        >
+          ∞
+        </button>
+        <button type="submit" className="btn btn--primary" disabled={!valid}>
           Give clue
         </button>
+        <span id="clue-hint" className="cluebar__hint" role={valid ? undefined : 'alert'}>
+          {typed !== '' && !valid
+            ? 'One word only.'
+            : unlimited
+              ? 'Unlimited: guess until you get one wrong.'
+              : count === '0'
+                ? 'Zero: none of your cards. Guess until you get one wrong.'
+                : ''}
+        </span>
       </form>
     );
   }
+
+  const uncapped = game.guessesLeft !== null && !Number.isFinite(game.guessesLeft);
 
   return (
     <div className={`cluebar cluebar--${game.turn}`}>
       <span className="cluebar__label">{TEAM_NAME[game.turn]} guessing</span>
       {current && (
         <span className="cluebar__clue">
-          {current.word} <em>{current.count}</em>
+          {current.word} <em>{current.count === null ? '∞' : current.count}</em>
         </span>
       )}
       <span className="cluebar__left">
-        {game.guessesLeft} {game.guessesLeft === 1 ? 'guess' : 'guesses'} left
+        {uncapped
+          ? 'unlimited guesses'
+          : `${game.guessesLeft} ${game.guessesLeft === 1 ? 'guess' : 'guesses'} left`}
       </span>
       <button type="button" className="btn" onClick={onPass}>
         End turn

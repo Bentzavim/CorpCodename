@@ -68,18 +68,25 @@ export function remaining(cards: BoardCard[], team: Team): number {
   return cards.filter((c) => c.kind === team && !c.revealed).length;
 }
 
-/** Records a clue and opens the guessing window (count + 1 guesses, as per the rules). */
-export function giveClue(state: GameState, word: string, count: number): GameState {
+/**
+ * Records a clue and opens the guessing window: the number of cards named, plus
+ * the customary bonus guess.
+ *
+ * A count of 0 ("none of my cards relate to this") and an unlimited clue both
+ * lift the cap entirely, as the rules have it — the team may keep guessing until
+ * they get one wrong or stop. `null` is the unlimited clue.
+ */
+export function giveClue(state: GameState, word: string, count: number | null): GameState {
   if (state.winner) return state;
   const trimmed = word.trim();
   if (!trimmed) return state;
-  const safeCount = Math.max(0, Math.min(9, Math.floor(count)));
+  const safeCount = count === null ? null : Math.max(0, Math.min(9, Math.floor(count)));
+  const uncapped = safeCount === null || safeCount === 0;
 
   return {
     ...state,
     clues: [...state.clues, { team: state.turn, word: trimmed, count: safeCount }],
-    // The bonus guess is always available, including on a 0 clue.
-    guessesLeft: safeCount + 1,
+    guessesLeft: uncapped ? Number.POSITIVE_INFINITY : safeCount + 1,
     log: [...state.log, { kind: 'clue', team: state.turn, word: trimmed, count: safeCount }],
   };
 }

@@ -28,11 +28,16 @@ export interface BoardCard {
 export interface Clue {
   team: Team;
   word: string;
-  count: number;
+  /**
+   * How many cards the clue points at, or `null` for an unlimited clue — the
+   * spymaster saying "unlimited" to send their team after cards left over from
+   * earlier clues.
+   */
+  count: number | null;
 }
 
 export type LogEntry =
-  | { kind: 'clue'; team: Team; word: string; count: number }
+  | { kind: 'clue'; team: Team; word: string; count: number | null }
   | { kind: 'reveal'; team: Team; name: string; result: CardKind }
   | { kind: 'pass'; team: Team }
   | { kind: 'end'; winner: Team; reason: string };
@@ -43,7 +48,10 @@ export interface GameState {
   cards: BoardCard[];
   startingTeam: Team;
   turn: Team;
-  /** Remaining guesses this turn. `null` until a clue has been given. */
+  /**
+   * Remaining guesses this turn. `null` until a clue has been given, and
+   * `Infinity` after a clue of 0 or unlimited, both of which lift the cap.
+   */
   guessesLeft: number | null;
   clues: Clue[];
   log: LogEntry[];

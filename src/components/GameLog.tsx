@@ -11,7 +11,7 @@ const RESULT_TEXT: Record<string, string> = {
 function describe(entry: LogEntry): string {
   switch (entry.kind) {
     case 'clue':
-      return `${TEAM_NAME[entry.team]} clue: “${entry.word}” for ${entry.count}`;
+      return `${TEAM_NAME[entry.team]} clue: “${entry.word}” for ${entry.count ?? 'unlimited'}`;
     case 'reveal':
       return `${TEAM_NAME[entry.team]} turned over ${entry.name} — ${RESULT_TEXT[entry.result]}`;
     case 'pass':
