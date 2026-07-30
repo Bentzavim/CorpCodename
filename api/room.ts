@@ -23,11 +23,7 @@ function send(res: Res, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-async function readBody(req: Req): Promise<Record<string, unknown>> {
-  if (req.body && typeof req.body === 'object') return req.body as Record<string, unknown>;
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
-  const raw = Buffer.concat(chunks).toString('utf8');
+function parse(raw: string): Record<string, unknown> {
   if (!raw) return {};
   try {
     return JSON.parse(raw) as Record<string, unknown>;
@@ -36,8 +32,53 @@ async function readBody(req: Req): Promise<Record<string, unknown>> {
   }
 }
 
+/**
+ * Reads the request body in whichever shape the platform hands it over.
+ *
+ * Vercel parses the body itself and sets `req.body` — as an object, but also as
+ * a string or a Buffer depending on how the request arrived. Reading the stream
+ * in those cases waits on bytes that have already been consumed and never
+ * arrive, so the function hangs until the platform kills it and the caller sees
+ * a gateway error rather than an answer. Locally `req.body` is unset and the
+ * stream is the only source, so both paths have to work.
+ */
+async function readBody(req: Req): Promise<Record<string, unknown>> {
+  const given = req.body;
+  if (given !== undefined && given !== null) {
+    if (Buffer.isBuffer(given)) return parse(given.toString('utf8'));
+    if (typeof given === 'string') return parse(given);
+    if (typeof given === 'object') return given as Record<string, unknown>;
+  }
+
+  // Nothing pre-parsed: read the stream, but never wait on it indefinitely.
+  const raw = await new Promise<string>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const timer = setTimeout(() => reject(new RoomError('Timed out reading the request.')), 5000);
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      clearTimeout(timer);
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    req.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+  return parse(raw);
+}
+
 export default async function handler(req: Req, res: Res) {
-  if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
+  // Openable in a browser, so "is the API even deployed?" can be answered
+  // without a console. Reports only which store is wired up — no room data.
+  if (req.method === 'GET') {
+    return send(res, 200, {
+      ok: true,
+      store: storeKind(),
+      node: process.version,
+      time: new Date().toISOString(),
+    });
+  }
+  if (req.method !== 'POST') return send(res, 405, { error: 'POST or GET only.' });
 
   try {
     const body = await readBody(req);

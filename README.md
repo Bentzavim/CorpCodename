@@ -110,10 +110,16 @@ single instance, but breaks as soon as the platform runs a second one: two
 players get two different rooms, or a room seems to vanish. Fine for `npm run
 dev`; **not fine in production**.
 
+`GET /api/room` in a browser answers this and confirms the functions deployed
+at all:
+
+```json
+{ "ok": true, "store": "memory", "node": "v22.x", "time": "…" }
+```
+
 To fix it, add a Redis store from the Vercel dashboard — Marketplace → any Redis
 provider → connect to the project. That sets `KV_REST_API_URL` and
-`KV_REST_API_TOKEN`, which is all the code looks for. Redeploy and it switches
-over on its own. `POST /api/room {"op":"health"}` reports which is in use.
+`KV_REST_API_TOKEN`, which is all the code looks for. Redeploy and `store` reads `redis`.
 
 Rooms expire 12 hours after their last request either way.
 

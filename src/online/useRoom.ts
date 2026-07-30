@@ -43,13 +43,29 @@ async function post(body: Record<string, unknown>): Promise<Record<string, unkno
     // A blocked or absent origin — the shared artifact build, typically.
     throw new Error(NO_SERVER);
   }
+  const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
+
   // A static host answers /api/room with its own 404 page rather than JSON.
-  if (res.status === 404 || res.status === 405) {
-    const type = res.headers.get('content-type') ?? '';
-    if (!type.includes('application/json')) throw new Error(NO_SERVER);
+  if (!isJson && (res.status === 404 || res.status === 405)) throw new Error(NO_SERVER);
+
+  if (!isJson) {
+    // The platform answered instead of the function — a crash, a timeout, or a
+    // build that never produced one. Say which, because "request failed" sends
+    // everyone hunting in the wrong place.
+    const body = (await res.text().catch(() => '')).replace(/<[^>]*>/g, ' ').trim();
+    throw new Error(
+      `The server returned ${res.status} without JSON` +
+        (body ? ` — ${body.slice(0, 140)}` : '') +
+        '. Check the function logs for /api/room.',
+    );
   }
+
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Request failed.');
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : `The server refused that (${res.status}).`,
+    );
+  }
   return data;
 }
 
