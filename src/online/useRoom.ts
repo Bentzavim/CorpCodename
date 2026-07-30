@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PublicRoom, RoomAction } from '../room/types';
+import type { PublicRoom, RoomAction } from '../room/types.js';
 
 const PLAYER_KEY = 'corpcodename:player:v1';
 const PING_MS = 10_000;

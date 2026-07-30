@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Board } from '../components/Board';
-import { ClueBar } from '../components/ClueBar';
-import { GameLog } from '../components/GameLog';
-import { Scoreboard, TEAM_NAME } from '../components/Scoreboard';
-import type { PublicRoom } from '../room/types';
-import { Lobby } from './Lobby';
-import { JoinScreen } from './JoinScreen';
-import { useRoom, createRoom, joinRoom, loadIdentity } from './useRoom';
+import { Board } from '../components/Board.js';
+import { ClueBar } from '../components/ClueBar.js';
+import { GameLog } from '../components/GameLog.js';
+import { Scoreboard, TEAM_NAME } from '../components/Scoreboard.js';
+import type { PublicRoom } from '../room/types.js';
+import { Lobby } from './Lobby.js';
+import { JoinScreen } from './JoinScreen.js';
+import { useRoom, createRoom, joinRoom, loadIdentity } from './useRoom.js';
 
 interface Props {
   code: string | null;

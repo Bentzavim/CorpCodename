@@ -1,5 +1,5 @@
-import type { LogEntry } from '../game/types';
-import { TEAM_NAME } from './Scoreboard';
+import type { LogEntry } from '../game/types.js';
+import { TEAM_NAME } from './Scoreboard.js';
 
 const RESULT_TEXT: Record<string, string> = {
   red: 'a Red card',

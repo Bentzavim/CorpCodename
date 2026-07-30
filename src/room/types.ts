@@ -1,4 +1,4 @@
-import type { CardKind, Entity, GameState, LogEntry, Team } from '../game/types';
+import type { CardKind, Entity, GameState, LogEntry, Team } from '../game/types.js';
 
 export type PlayerId = string;
 export type Seat = 'spymaster' | 'operative';

@@ -1,6 +1,6 @@
-import type { PublicRoom, RoomAction, Seat } from '../room/types';
-import type { Team } from '../game/types';
-import { TEAM_NAME } from '../components/Scoreboard';
+import type { PublicRoom, RoomAction, Seat } from '../room/types.js';
+import type { Team } from '../game/types.js';
+import { TEAM_NAME } from '../components/Scoreboard.js';
 
 interface Props {
   room: PublicRoom;

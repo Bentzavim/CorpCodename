@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Entity } from '../game/types';
+import type { Entity } from '../game/types.js';
 
 /**
  * Portraits taken from the printout live in `public/` and are stored as paths

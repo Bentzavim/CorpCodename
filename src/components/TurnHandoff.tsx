@@ -1,5 +1,5 @@
-import type { Team } from '../game/types';
-import { TEAM_NAME } from './Scoreboard';
+import type { Team } from '../game/types.js';
+import { TEAM_NAME } from './Scoreboard.js';
 
 interface Props {
   team: Team;

@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Board } from './components/Board';
-import { ClueBar } from './components/ClueBar';
-import { GameLog } from './components/GameLog';
-import { RosterImport } from './components/RosterImport';
-import { Scoreboard } from './components/Scoreboard';
-import { TurnHandoff } from './components/TurnHandoff';
-import { membersToEntities, type MemberRecord } from './data/members';
-import { loadRoster } from './data/rosterStorage';
-import { ROSTER_FETCHED_AT, ROSTER_SOURCE } from './data/roster';
-import { createGame, giveClue, pass, revealCard } from './game/engine';
-import { localPublicGame } from './room/local';
-import { OnlineRoom } from './online/OnlineRoom';
-import { useHashRoom } from './online/useHashRoom';
-import { normaliseSeed, randomSeed } from './game/rng';
-import { BOARD_SIZE, type GameState } from './game/types';
+import { Board } from './components/Board.js';
+import { ClueBar } from './components/ClueBar.js';
+import { GameLog } from './components/GameLog.js';
+import { RosterImport } from './components/RosterImport.js';
+import { Scoreboard } from './components/Scoreboard.js';
+import { TurnHandoff } from './components/TurnHandoff.js';
+import { membersToEntities, type MemberRecord } from './data/members.js';
+import { loadRoster } from './data/rosterStorage.js';
+import { ROSTER_FETCHED_AT, ROSTER_SOURCE } from './data/roster.js';
+import { createGame, giveClue, pass, revealCard } from './game/engine.js';
+import { localPublicGame } from './room/local.js';
+import { OnlineRoom } from './online/OnlineRoom.js';
+import { useHashRoom } from './online/useHashRoom.js';
+import { normaliseSeed, randomSeed } from './game/rng.js';
+import { BOARD_SIZE, type GameState } from './game/types.js';
 
 function readSeed(): string {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));

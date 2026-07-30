@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { BOARD_SIZE } from '../game/types';
-import { displayName, parseRoster, type MemberRecord } from '../data/members';
-import { clearRoster, hasImportedRoster, saveRoster } from '../data/rosterStorage';
-import { ROSTER_SOURCE } from '../data/roster';
+import { BOARD_SIZE } from '../game/types.js';
+import { displayName, parseRoster, type MemberRecord } from '../data/members.js';
+import { clearRoster, hasImportedRoster, saveRoster } from '../data/rosterStorage.js';
+import { ROSTER_SOURCE } from '../data/roster.js';
 
 interface Props {
   currentCount: number;

@@ -1,4 +1,4 @@
-import { SEED_MEMBERS, type MemberRecord } from './members';
+import { SEED_MEMBERS, type MemberRecord } from './members.js';
 
 // Browser-only. The server builds its boards from SEED_MEMBERS directly, so
 // nothing here may be imported from api/ or server/.

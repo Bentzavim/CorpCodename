@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { getStore } from '../server/store';
-import { publicRoom } from '../src/room/view';
-import type { Room } from '../src/room/types';
+import { getStore } from '../server/store.js';
+import { publicRoom } from '../src/room/view.js';
+import type { Room } from '../src/room/types.js';
 
 /**
  * One Server-Sent Events stream per player.
@@ -11,10 +11,15 @@ import type { Room } from '../src/room/types';
  * no protocol upgrade involved, so it runs on an ordinary serverless function,
  * and `EventSource` reconnects by itself when the platform cuts a long request.
  */
-export const config = { maxDuration: 60 };
-
-/** Left with room to spare under maxDuration so the close is ours, not a timeout. */
-const LIFETIME_MS = 50_000;
+/**
+ * The stream closes itself well inside any plausible platform cap, so the end is
+ * ours and the client's own reconnect runs. No `maxDuration` is declared: the
+ * allowed ceiling depends on the plan, and an unsupported value fails the whole
+ * invocation rather than degrading. If the platform cuts the stream first,
+ * EventSource reconnects and nothing is lost — the client resumes from its
+ * last version.
+ */
+const LIFETIME_MS = 25_000;
 const HEARTBEAT_MS = 15_000;
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {

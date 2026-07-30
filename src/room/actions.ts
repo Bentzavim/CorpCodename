@@ -1,9 +1,9 @@
-import { createGame, giveClue, pass, revealCard } from '../game/engine';
-import { randomSeed } from '../game/rng';
-import { SEED_MEMBERS, membersToEntities } from '../data/members';
-import { BOARD_SIZE, type Team } from '../game/types';
-import { startBlocker } from './view';
-import type { Player, PlayerId, Room, RoomAction, Seat } from './types';
+import { createGame, giveClue, pass, revealCard } from '../game/engine.js';
+import { randomSeed } from '../game/rng.js';
+import { SEED_MEMBERS, membersToEntities } from '../data/members.js';
+import { BOARD_SIZE, type Team } from '../game/types.js';
+import { startBlocker } from './view.js';
+import type { Player, PlayerId, Room, RoomAction, Seat } from './types.js';
 
 /**
  * Refused for a reason the player should see. Anything that is merely

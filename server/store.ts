@@ -1,6 +1,6 @@
-import { randomSeed } from '../src/game/rng';
-import { ROOM_CODE_LENGTH, ROOM_TTL_MS, type PlayerId, type Room } from '../src/room/types';
-import { cleanName } from '../src/room/actions';
+import { randomSeed } from '../src/game/rng.js';
+import { ROOM_CODE_LENGTH, ROOM_TTL_MS, type PlayerId, type Room } from '../src/room/types.js';
+import { cleanName } from '../src/room/actions.js';
 
 /**
  * Where rooms live between requests.

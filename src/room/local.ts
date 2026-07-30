@@ -1,7 +1,7 @@
-import { remaining } from '../game/engine';
-import type { GameState } from '../game/types';
-import { encodeGuesses } from './view';
-import type { PublicGame } from './types';
+import { remaining } from '../game/engine.js';
+import type { GameState } from '../game/types.js';
+import { encodeGuesses } from './view.js';
+import type { PublicGame } from './types.js';
 
 /**
  * Renders a local, one-device game through the same view type the server sends.

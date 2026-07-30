@@ -1,5 +1,5 @@
-import { remaining } from '../game/engine';
-import type { Team } from '../game/types';
+import { remaining } from '../game/engine.js';
+import type { Team } from '../game/types.js';
 import {
   DISCONNECT_AFTER_MS,
   type Player,
@@ -8,7 +8,7 @@ import {
   type PublicPlayer,
   type PublicRoom,
   type Room,
-} from './types';
+} from './types.js';
 
 /**
  * The trust boundary. Everything a client learns about a room comes through

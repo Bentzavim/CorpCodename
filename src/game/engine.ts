@@ -1,4 +1,4 @@
-import { createRng, shuffle } from './rng';
+import { createRng, shuffle } from './rng.js';
 import {
   ASSASSIN_CARDS,
   BOARD_SIZE,
@@ -10,7 +10,7 @@ import {
   type Entity,
   type GameState,
   type Team,
-} from './types';
+} from './types.js';
 
 export function otherTeam(team: Team): Team {
   return team === 'red' ? 'blue' : 'red';

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { PublicGame } from '../room/types';
-import { TEAM_NAME } from './Scoreboard';
+import type { PublicGame } from '../room/types.js';
+import { TEAM_NAME } from './Scoreboard.js';
 
 interface Props {
   game: PublicGame;

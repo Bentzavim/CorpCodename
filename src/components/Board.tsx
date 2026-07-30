@@ -1,5 +1,5 @@
-import type { PublicGame } from '../room/types';
-import { Card } from './Card';
+import type { PublicGame } from '../room/types.js';
+import { Card } from './Card.js';
 
 interface Props {
   game: PublicGame;

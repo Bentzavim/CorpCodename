@@ -1,5 +1,5 @@
-import type { Team } from '../game/types';
-import type { PublicGame } from '../room/types';
+import type { Team } from '../game/types.js';
+import type { PublicGame } from '../room/types.js';
 
 const TEAM_NAME: Record<Team, string> = {
   red: 'Red Benches',

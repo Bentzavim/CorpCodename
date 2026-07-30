@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { RoomError, apply, cleanName } from '../src/room/actions';
+import { RoomError, apply, cleanName } from '../src/room/actions.js';
 import {
   RoomNotFound,
   blankRoom,
@@ -7,11 +7,9 @@ import {
   newPlayerId,
   newRoomCode,
   storeKind,
-} from '../server/store';
-import { publicRoom } from '../src/room/view';
-import type { RoomAction } from '../src/room/types';
-
-export const config = { maxDuration: 15 };
+} from '../server/store.js';
+import { publicRoom } from '../src/room/view.js';
+import type { RoomAction } from '../src/room/types.js';
 
 type Req = IncomingMessage & { body?: unknown };
 type Res = ServerResponse;

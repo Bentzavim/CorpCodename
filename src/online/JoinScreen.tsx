@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { normaliseSeed } from '../game/rng';
-import { loadIdentity } from './useRoom';
+import { normaliseSeed } from '../game/rng.js';
+import { loadIdentity } from './useRoom.js';
 
 interface Props {
   /** Prefilled from an invite link, when there is one. */

@@ -1,6 +1,6 @@
-import type { Entity } from '../game/types';
-import { ROSTER } from './roster';
-import { matchWard } from './wards';
+import type { Entity } from '../game/types.js';
+import { ROSTER } from './roster.js';
+import { matchWard } from './wards.js';
 
 export type MemberRole = 'Alderman' | 'Alderwoman' | 'Common Councillor';
 

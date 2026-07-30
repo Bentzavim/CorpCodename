@@ -1,6 +1,6 @@
-import type { CardKind } from '../game/types';
-import type { PublicCard } from '../room/types';
-import { Avatar } from './Avatar';
+import type { CardKind } from '../game/types.js';
+import type { PublicCard } from '../room/types.js';
+import { Avatar } from './Avatar.js';
 
 interface Props {
   card: PublicCard;
