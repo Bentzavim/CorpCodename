@@ -491,13 +491,17 @@ a {
 }
 
 .card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  aspect-ratio: 1 / 0.7;
-  padding: 0.5rem 0.35rem;
+  /* Three fifths portrait, two fifths name. Rows in fr rather than a height on
+     the image, so the split holds whatever the card is scaled to. */
+  display: grid;
+  grid-template-rows: 3fr 2fr;
+  /* The 3:2 split is the point, not the card's height. A taller card buys a
+     little more portrait and costs a lot of board: at 1/1.16 the photo is 7x
+     the area of the old crest but the bottom two rows fall off a laptop screen,
+     and scanning all 25 at once is the game. This is ~5x the old area with the
+     board still nearly whole. */
+  aspect-ratio: 1 / 0.82;
+  padding: 0;
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
@@ -525,10 +529,11 @@ a {
 
 .card__name {
   font-family: var(--serif);
-  font-size: clamp(0.62rem, 1.15vw, 0.92rem);
-  line-height: 1.15;
+  font-size: clamp(0.58rem, 1.05vw, 0.88rem);
+  line-height: 1.12;
   overflow-wrap: anywhere;
   hyphens: auto;
+  text-wrap: balance;
 }
 
 .card__kind {
@@ -615,6 +620,35 @@ a {
   box-shadow: inset 0 0 20px rgb(217 83 74 / 30%);
 }
 
+/* --- the portrait block ---------------------------------------------------- */
+
+.card__media {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  background: var(--bg-deep);
+  border-bottom: 1px solid rgb(0 0 0 / 35%);
+}
+
+/* Filling the row means the portrait carries the card, so it is worth the whole
+   width rather than a token circle. */
+.card__media .avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  font-size: clamp(0.9rem, 2.6vw, 1.5rem);
+}
+
+.card__body {
+  display: grid;
+  align-content: center;
+  gap: 0.1rem;
+  padding: 0.3rem 0.35rem;
+  min-width: 0;
+}
+
 /* --- avatars --------------------------------------------------------------- */
 
 .avatar {
@@ -637,7 +671,7 @@ a {
   object-fit: cover;
   /* The portraits are head-and-shoulders shots of varying height, so bias the
      crop upwards — centring one cuts the face off at the chin. */
-  object-position: 50% 18%;
+  object-position: 50% 22%;
   background: var(--bg-deep);
 }
 
@@ -939,19 +973,16 @@ a {
     padding: 0.75rem 0.6rem 2rem;
   }
 
-  /* At this width a 5-column board leaves ~60px per card, so the portrait
-     shrinks rather than disappearing — a face is quicker to place than a name
-     at this size. */
+  /* At this width a 5-column board leaves ~60px per card. The portrait keeps
+     its three fifths — a face is quicker to place than a name at this size —
+     and the card grows a little to give the name room underneath. */
   .card {
-    aspect-ratio: 1 / 1.1;
-    padding: 0.3rem 0.2rem;
-    gap: 0.2rem;
+    aspect-ratio: 1 / 1.32;
+    padding: 0;
   }
 
-  .card .avatar {
-    width: 1.9rem;
-    height: 1.9rem;
-    font-size: 0.5rem;
+  .card__body {
+    padding: 0.2rem 0.15rem;
   }
 
   .card__name {

@@ -44,9 +44,16 @@ export function Card({ card, index, disabled, onReveal }: Props) {
           : `Turn over ${entity.name}`
       }
     >
-      <Avatar entity={entity} />
-      <span className="card__name">{entity.name}</span>
-      {kind && <span className="card__kind">{KIND_LABEL[kind]}</span>}
+      {/* Two rows, three fifths to two: the portrait is the thing you scan for,
+          the name confirms it. The split is the grid's, not the image's, so it
+          holds whatever shape the portrait happens to be. */}
+      <span className="card__media">
+        <Avatar entity={entity} />
+      </span>
+      <span className="card__body">
+        <span className="card__name">{entity.name}</span>
+        {kind && <span className="card__kind">{KIND_LABEL[kind]}</span>}
+      </span>
     </button>
   );
 }

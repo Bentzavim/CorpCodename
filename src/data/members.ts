@@ -65,7 +65,12 @@ const KEPT_TITLE: [RegExp, string][] = [
   [/\b(hon\.?|honourable)\b/i, 'Hon.'],
 ];
 
-/** Surname particles that belong with the word after them. */
+/**
+ * Words that begin a compound surname rather than ending one, so the surname
+ * starts at the first of them and runs to the end: "St John Davis", "van der
+ * Berg", "de la Cruz". Walking back from the last word only ever catches the
+ * final particle, which drops everything in front of it.
+ */
 const PARTICLE =
   /^(van|von|de|del|della|di|da|dos|du|la|le|el|al|ten|ter|bin|ibn|abu|mac|mc|st\.?|saint)$/i;
 
@@ -91,9 +96,10 @@ export function displayName(raw: string): string {
   const words = rest.split(/\s+/).filter(Boolean);
   if (words.length === 0) return stripped;
 
-  // Walk back over any particles so "de Vere" stays whole.
-  let start = words.length - 1;
-  while (start > 1 && PARTICLE.test(words[start - 1])) start -= 1;
+  // The surname begins at the first particle after the forename, if there is
+  // one, and otherwise is simply the last word.
+  const particle = words.findIndex((w, i) => i > 0 && i < words.length - 1 && PARTICLE.test(w));
+  const start = particle > 0 ? particle : words.length - 1;
   const surname = words.slice(start).join(' ');
   const forename = words.length > 1 ? words[0] : '';
 

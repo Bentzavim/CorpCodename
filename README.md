@@ -64,6 +64,14 @@ shadow and a lit top edge so it reads as a thing lying on cloth. **The bench
 colours — red, blue, violet, the assassin — are the game's information and never
 shift.**
 
+A card is **three fifths portrait, two fifths name**: a grid split in `fr`, not a
+height on the image, so it holds at any size. The card itself is kept squarish
+rather than the portrait shape that split suggests — a taller card buys a little
+more face and costs a lot of board, and being able to scan all 25 at once is the
+game. At the shape used the portrait is about five times the area of the small
+crest it replaced; going a further two rows off the bottom of a laptop screen
+would have bought seven.
+
 ## Two benches, or one
 
 **Benches** in the header (and in the online lobby) picks the shape of the game.
@@ -207,6 +215,12 @@ shows: **an optional title, a first name and a surname**, so
 dropped, and the only titles kept are Sir, Dame and Hon. Nothing else appears on
 a card. All 125 stay distinct once shortened, which `displayName` is checked
 against — if a future roster ever collides, that check is where it will show up.
+
+A surname can be more than one word. `James St John Davis` is not James Davis:
+the surname begins at the first particle after the forename and runs to the end,
+which also handles `van der Berg` and `de la Cruz`. Walking back from the last
+word — the obvious approach, and the one this had at first — catches only the
+final particle and silently drops everything in front of it.
 
 ### Refreshing it
 
