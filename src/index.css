@@ -1,17 +1,25 @@
 /* ---------------------------------------------------------------------------
-   Corp Codenames — City of London palette: slate and parchment, with the red
-   and blue of the two benches and a little civic gold.
+   Corp Codenames — cards dealt onto crushed green suede, in the manner of a
+   committee-room card table: billiard baize, parchment ink, and a little civic
+   gold. The bench colours are the game's information and never shift.
    --------------------------------------------------------------------------- */
 
 :root {
-  --bg: #12161f;
-  --bg-deep: #0c0f16;
-  --surface: #1b2130;
-  --surface-2: #232b3d;
-  --line: #313a4f;
-  --ink: #e8e4dc;
-  --muted: #98a2b8;
-  --gold: #c9a227;
+  /* The table. */
+  --baize: #1a3a2f;
+  --baize-deep: #0e211b;
+  --baize-lift: #2f5a49;
+
+  /* Card and panel stock: green-biased charcoal rather than the neutral slate
+     it was, so the furniture reads as belonging to the table it sits on. */
+  --bg: #152a23;
+  --bg-deep: #101a16;
+  --surface: #1c2622;
+  --surface-2: #26332d;
+  --line: #3a4b42;
+  --ink: #ece7dc;
+  --muted: #9db0a4;
+  --gold: #d0a92c;
 
   --red: #c0392f;
   --red-soft: #8c2b24;
@@ -26,7 +34,13 @@
   --assassin: #0b0d12;
 
   --radius: 12px;
-  --shadow: 0 6px 20px rgb(0 0 0 / 35%);
+  /* Two shadows apiece: a tight contact shadow where the card meets the cloth,
+     and a wide soft one for the height. Either alone reads as a flat sticker. */
+  --shadow: 0 1px 2px rgb(0 0 0 / 45%), 0 10px 26px -6px rgb(0 0 0 / 55%);
+  --shadow-rest: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px -4px rgb(0 0 0 / 45%);
+  --pool: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='900'%20height='900'%3E%3Cfilter%20id='p'%20x='0'%20y='0'%20width='100%25'%20height='100%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.004%200.006'%20numOctaves='3'%20seed='11'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='900'%20height='900'%20filter='url(%23p)'/%3E%3C/svg%3E");
+  --crush: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='420'%20height='420'%3E%3Cfilter%20id='c'%20x='0'%20y='0'%20width='100%25'%20height='100%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.018%200.03'%20numOctaves='4'%20seed='7'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='420'%20height='420'%20filter='url(%23c)'/%3E%3C/svg%3E");
+  --nap: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='180'%20height='180'%3E%3Cfilter%20id='n'%20x='0'%20y='0'%20width='100%25'%20height='100%25'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='3'%20seed='3'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='180'%20height='180'%20filter='url(%23n)'/%3E%3C/svg%3E");
 
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
   --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
@@ -48,11 +62,34 @@ body,
 body {
   margin: 0;
   font-family: var(--sans);
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #1d2434 0%, transparent 60%),
-    var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+
+  /* Suede in layers, from the top down: a vignette so the table falls away at
+     the edges, the nap, the crushed folds, then light pooled from above and
+     shadow gathering in the near corner. Every layer is generated, so there is
+     nothing to fetch and it survives the artifact's content policy intact. */
+  background-color: var(--baize);
+  background-image:
+    radial-gradient(130% 100% at 50% -5%, transparent 25%, rgb(4 12 9 / 70%) 100%),
+    var(--nap),
+    var(--crush),
+    var(--pool),
+    radial-gradient(80% 50% at 50% -12%, rgb(126 182 152 / 20%) 0%, transparent 70%);
+  background-blend-mode: normal, overlay, soft-light, soft-light, screen;
+  background-repeat: no-repeat, repeat, repeat, repeat, no-repeat;
+  /* Fixed keeps the table still while the board scrolls over it. */
+  background-attachment: fixed;
+  background-size: cover, 180px 180px, 420px 420px, 900px 900px, cover;
+}
+
+/* A fixed background repaints the whole texture on every scroll frame, which
+   phones feel and mobile Safari renders unreliably. The cloth tiles either way,
+   so let it scroll where that matters. */
+@media (max-width: 900px), (hover: none) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 h1,
@@ -168,8 +205,8 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  background: #2c3549;
-  border-color: #43506c;
+  background: #2f3d36;
+  border-color: #4b6055;
 }
 
 .btn:active:not(:disabled) {
@@ -249,6 +286,7 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
   opacity: 0.62;
   transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -351,6 +389,7 @@ a {
   background: var(--surface);
   border: 1px solid var(--line);
   border-left-width: 4px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
 }
 
 .cluebar--red {
@@ -416,7 +455,7 @@ a {
 
 .cluebar__infinity:hover {
   color: var(--ink);
-  border-color: #43506c;
+  border-color: #4b6055;
 }
 
 .cluebar__infinity.is-on {
@@ -462,6 +501,9 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  /* A lit top edge and a contact shadow: the card is a thing lying on cloth,
+     not a panel painted onto it. */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), var(--shadow-rest);
   color: var(--ink);
   font: inherit;
   text-align: center;
@@ -472,9 +514,9 @@ a {
 }
 
 .card:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-  border-color: #4a5876;
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), var(--shadow);
+  border-color: #587062;
 }
 
 .card:disabled {
@@ -499,6 +541,7 @@ a {
 /* Turned over — the card takes the full team colour. */
 .card--revealed {
   transform: none;
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 30%);
 }
 
 .card--revealed .avatar {
@@ -602,6 +645,7 @@ a {
 
 .panel {
   background: var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
@@ -964,6 +1008,7 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
   font-size: 0.8rem;
 }
 
@@ -1103,6 +1148,7 @@ a {
   border: 1px solid var(--line);
   border-top-width: 3px;
   background: var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1185,6 +1231,7 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;

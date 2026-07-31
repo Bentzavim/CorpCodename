@@ -45,6 +45,25 @@ sub-path, as GitHub Pages does, additionally needs `base: '/CorpCodename/'` in
 `vite.config.ts` — portrait URLs already resolve against
 `import.meta.env.BASE_URL`, so they follow automatically.
 
+## The look
+
+Cards dealt onto crushed green suede — a committee-room card table. The cloth is
+generated rather than fetched: three scales of SVG turbulence as data URIs (broad
+pooling where the pile has been pushed flat, finer creases inside those pools,
+and the nap itself), over a vignette and light pooled from above. One scale alone
+reads as static or as brushed metal; three read as suede.
+
+Nothing is downloaded, which is what lets the single-file artifact build keep its
+backdrop under a content policy that blocks every external request. That the
+texture *paints* rather than merely parses is checked on the pixels — a blocked
+image leaves the CSS intact and the canvas flat.
+
+Card and panel stock is a green-biased charcoal rather than the neutral slate it
+was, so the furniture belongs to the table it sits on, and each carries a contact
+shadow and a lit top edge so it reads as a thing lying on cloth. **The bench
+colours — red, blue, violet, the assassin — are the game's information and never
+shift.**
+
 ## Two benches, or one
 
 **Benches** in the header (and in the online lobby) picks the shape of the game.
