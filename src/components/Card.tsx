@@ -12,6 +12,7 @@ interface Props {
 const KIND_LABEL: Record<CardKind, string> = {
   red: 'Red',
   blue: 'Blue',
+  violet: 'Bench',
   neutral: 'Bystander',
   assassin: 'Assassin',
 };

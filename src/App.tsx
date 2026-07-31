@@ -13,11 +13,18 @@ import { localPublicGame } from './room/local.js';
 import { OnlineRoom } from './online/OnlineRoom.js';
 import { useHashRoom } from './online/useHashRoom.js';
 import { normaliseSeed, randomSeed } from './game/rng.js';
-import { BOARD_SIZE, type GameState } from './game/types.js';
+import { BOARD_SIZE, type GameMode, type GameState } from './game/types.js';
+
+function hashParams(): URLSearchParams {
+  return new URLSearchParams(window.location.hash.replace(/^#/, ''));
+}
 
 function readSeed(): string {
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  return normaliseSeed(params.get('seed') ?? '') || randomSeed();
+  return normaliseSeed(hashParams().get('seed') ?? '') || randomSeed();
+}
+
+function readMode(): GameMode {
+  return hashParams().get('mode') === 'solo' ? 'solo' : 'duel';
 }
 
 export default function App() {
@@ -62,6 +69,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
   const playable = entities.length >= BOARD_SIZE;
 
   const [seed, setSeed] = useState<string>(readSeed);
+  const [mode, setMode] = useState<GameMode>(readMode);
   const [game, setGame] = useState<GameState | null>(null);
   const [spymaster, setSpymaster] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -75,6 +83,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
   const needsHandoff =
     game !== null &&
     game.winner === null &&
+    !game.lost &&
     game.guessesLeft === null && // between turns, before the next clue
     game.log.length > 0 && // the opening turn needs no handoff
     readyFor !== turnKey;
@@ -90,19 +99,22 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
       setGame(null);
       return;
     }
-    setGame(createGame(seed, 'members', entities));
+    setGame(createGame(seed, 'members', entities, mode));
     setSpymaster(false);
     setReadyFor(null);
-  }, [seed, entities, playable]);
+  }, [seed, entities, playable, mode]);
 
   useEffect(() => {
-    const hash = `#seed=${seed}`;
+    const hash = mode === 'solo' ? `#seed=${seed}&mode=solo` : `#seed=${seed}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
-  }, [seed]);
+  }, [seed, mode]);
 
   // Someone pasting a shared link into the address bar only changes the hash.
   useEffect(() => {
-    const onHashChange = () => setSeed((prev) => (prev === readSeed() ? prev : readSeed()));
+    const onHashChange = () => {
+      setSeed((prev) => (prev === readSeed() ? prev : readSeed()));
+      setMode((prev) => (prev === readMode() ? prev : readMode()));
+    };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -113,7 +125,8 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
 
   const shareLink = useCallback(() => {
     const { origin, pathname } = window.location;
-    const text = framed ? seed : `${origin}${pathname}#seed=${seed}`;
+    const suffix = mode === 'solo' ? '&mode=solo' : '';
+    const text = framed ? seed : `${origin}${pathname}#seed=${seed}${suffix}`;
     void navigator.clipboard?.writeText(text).then(
       () => {
         setCopied(true);
@@ -121,7 +134,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
       },
       () => setCopied(false),
     );
-  }, [seed, framed]);
+  }, [seed, framed, mode]);
 
   return (
     <div className="app">
@@ -156,6 +169,21 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
             >
               {copied ? 'Copied' : framed ? 'Copy seed' : 'Share'}
             </button>
+            <label className="field">
+              <span>Benches</span>
+              <select
+                value={mode}
+                onChange={(e) => {
+                  setMode(e.target.value as GameMode);
+                  setSeed(randomSeed());
+                }}
+                aria-label="How many benches are playing"
+              >
+                <option value="duel">Red v Blue</option>
+                <option value="solo">Violet, alone</option>
+              </select>
+            </label>
+
             <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
               New game
             </button>

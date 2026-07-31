@@ -1,4 +1,4 @@
-import type { CardKind, Entity, GameState, LogEntry, Team } from '../game/types.js';
+import type { CardKind, Entity, GameMode, GameState, LogEntry, Team } from '../game/types.js';
 
 export type PlayerId = string;
 export type Seat = 'spymaster' | 'operative';
@@ -18,6 +18,8 @@ export interface Player {
  */
 export interface Room {
   code: string;
+  /** Chosen in the lobby by the host, and fixed once a board is dealt. */
+  mode: GameMode;
   /** Secret. The board is derived from it, so it never leaves the server. */
   seed: string;
   hostId: PlayerId;
@@ -45,9 +47,12 @@ export interface PublicCard {
 }
 
 export interface PublicGame {
+  mode: GameMode;
   cards: PublicCard[];
   startingTeam: Team;
   turn: Team;
+  /** Solo only: turns before the clock runs out. */
+  turnsLeft: number | null;
   /**
    * `null` until a clue is given, a number while counting down, and the literal
    * 'unlimited' after a clue of 0 or ∞ — JSON has no Infinity to send.
@@ -56,6 +61,8 @@ export interface PublicGame {
   clues: GameState['clues'];
   log: LogEntry[];
   winner: Team | null;
+  /** Solo only: the bench lost, to the assassin or the clock. */
+  lost: boolean;
   endReason: string | null;
   remaining: Record<Team, number>;
 }
@@ -70,6 +77,7 @@ export interface PublicPlayer {
 
 export interface PublicRoom {
   code: string;
+  mode: GameMode;
   version: number;
   hostId: PlayerId;
   you: PublicPlayer;
@@ -86,6 +94,7 @@ export interface PublicRoom {
 export type RoomAction =
   | { type: 'sit'; team: Team | null; seat: Seat | null }
   | { type: 'rename'; name: string }
+  | { type: 'mode'; mode: GameMode }
   | { type: 'start' }
   | { type: 'clue'; word: string; count: number | null }
   | { type: 'reveal'; index: number }

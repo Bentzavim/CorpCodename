@@ -16,7 +16,8 @@ const SEATS: { seat: Seat; label: string; note: string }[] = [
 
 export function Lobby({ room, act, onCopyInvite, copied }: Props) {
   const isHost = room.you.id === room.hostId;
-  const teams: Team[] = ['red', 'blue'];
+  const solo = room.mode === 'solo';
+  const teams: Team[] = solo ? ['violet'] : ['red', 'blue'];
 
   return (
     <div className="lobby">
@@ -31,11 +32,44 @@ export function Lobby({ room, act, onCopyInvite, copied }: Props) {
       </header>
 
       <p className="lobby__intro">
-        Share the link. Everyone picks a bench and a seat — each bench needs one spymaster
-        and at least one operative.
+        Share the link. Everyone picks a seat — each bench needs one spymaster and at
+        least one operative.
       </p>
 
-      <div className="lobby__teams">
+      {isHost ? (
+        <div className="lobby__mode">
+          <span className="lobby__eyebrow">Benches</span>
+          <div className="join__mode">
+            <button
+              type="button"
+              className={`btn ${!solo ? 'btn--primary' : ''}`}
+              onClick={() => act({ type: 'mode', mode: 'duel' })}
+              aria-pressed={!solo}
+            >
+              Red v Blue
+            </button>
+            <button
+              type="button"
+              className={`btn ${solo ? 'btn--primary' : ''}`}
+              onClick={() => act({ type: 'mode', mode: 'solo' })}
+              aria-pressed={solo}
+            >
+              Violet, alone
+            </button>
+          </div>
+          <p className="lobby__blocker">
+            {solo
+              ? 'One bench against the clock: nine Members, nine turns, and every other card but the assassin costs you a turn.'
+              : 'Two benches, nine cards and eight, first to find their own.'}
+          </p>
+        </div>
+      ) : (
+        <p className="lobby__blocker">
+          {solo ? 'Violet, alone — one bench against the clock.' : 'Red against Blue.'}
+        </p>
+      )}
+
+      <div className={`lobby__teams ${solo ? 'lobby__teams--solo' : ''}`}>
         {teams.map((team) => (
           <section key={team} className={`lobby__team lobby__team--${team}`}>
             <h2>{TEAM_NAME[team]}</h2>

@@ -1,8 +1,9 @@
-import { createGame, giveClue, pass, revealCard } from '../game/engine.js';
+import { createGame, giveClue, isOver, pass, revealCard } from '../game/engine.js';
 import { randomSeed } from '../game/rng.js';
 import { SEED_MEMBERS, membersToEntities } from '../data/members.js';
 import { BOARD_SIZE, type Team } from '../game/types.js';
 import { startBlocker } from './view.js';
+import { labelFor } from '../game/engine.js';
 import type { Player, PlayerId, Room, RoomAction, Seat } from './types.js';
 
 /**
@@ -29,7 +30,7 @@ function requirePlayer(room: Room, id: PlayerId): Player {
  * asked here rather than inside each handler so there is one place to read.
  */
 const ACTIONS = new Set<RoomAction['type']>([
-  'sit', 'rename', 'start', 'clue', 'reveal', 'pass', 'newGame',
+  'sit', 'rename', 'mode', 'start', 'clue', 'reveal', 'pass', 'newGame',
 ]);
 
 /**
@@ -48,7 +49,12 @@ export function authorise(room: Room, player: Player, action: RoomAction): void 
   switch (action.type) {
     case 'sit':
     case 'rename':
-      if (game && !game.winner) throw new RoomError('The game is under way.');
+      if (game && !isOver(game)) throw new RoomError('The game is under way.');
+      return;
+
+    case 'mode':
+      if (!isHost) throw new RoomError('Only the host can do that.');
+      if (game && !isOver(game)) throw new RoomError('The game is under way.');
       return;
 
     case 'start':
@@ -58,8 +64,8 @@ export function authorise(room: Room, player: Player, action: RoomAction): void 
 
     case 'clue':
       if (!game) throw new RoomError('The game has not started.');
-      if (game.winner) throw new RoomError('The game is over.');
-      if (player.team !== game.turn) throw new RoomError('It is not your team\u2019s turn.');
+      if (isOver(game)) throw new RoomError('The game is over.');
+      if (player.team !== game.turn) throw new RoomError('It is not your bench\u2019s turn.');
       if (player.seat !== 'spymaster') throw new RoomError('Only the spymaster gives clues.');
       if (game.guessesLeft !== null) throw new RoomError('A clue is already in play.');
       return;
@@ -67,8 +73,8 @@ export function authorise(room: Room, player: Player, action: RoomAction): void 
     case 'reveal':
     case 'pass':
       if (!game) throw new RoomError('The game has not started.');
-      if (game.winner) throw new RoomError('The game is over.');
-      if (player.team !== game.turn) throw new RoomError('It is not your team\u2019s turn.');
+      if (isOver(game)) throw new RoomError('The game is over.');
+      if (player.team !== game.turn) throw new RoomError('It is not your bench\u2019s turn.');
       // The spymaster knows the answers, so they do not get to touch the board.
       if (player.seat !== 'operative') throw new RoomError('Only operatives guess.');
       if (game.guessesLeft === null) throw new RoomError('Wait for your spymaster’s clue.');
@@ -92,8 +98,24 @@ export function apply(room: Room, playerId: PlayerId, action: RoomAction, now = 
       return next;
     }
 
+    case 'mode': {
+      if (action.mode !== 'solo' && action.mode !== 'duel') {
+        throw new RoomError('Unknown mode.');
+      }
+      next.mode = action.mode;
+      // The benches on offer change with the mode, so nobody keeps a seat that
+      // no longer exists.
+      next.players = next.players.map((p) => ({ ...p, team: null, seat: null }));
+      next.game = null;
+      return next;
+    }
+
     case 'sit': {
       const { team, seat } = action;
+      const allowed: Team[] = room.mode === 'solo' ? ['violet'] : ['red', 'blue'];
+      if (team !== null && !allowed.includes(team)) {
+        throw new RoomError('That bench is not playing this game.');
+      }
       if (team !== null && seat === 'spymaster') {
         const taken = room.players.find(
           (p) => p.id !== playerId && p.team === team && p.seat === 'spymaster',
@@ -106,12 +128,12 @@ export function apply(room: Room, playerId: PlayerId, action: RoomAction, now = 
 
     case 'start':
     case 'newGame': {
-      const blocker = startBlocker(next.players);
+      const blocker = startBlocker(next.players, next.mode);
       if (blocker) throw new RoomError(blocker);
       if (ENTITIES.length < BOARD_SIZE) throw new RoomError('The roster is too short for a board.');
       // A fresh secret each game, so finishing one does not expose the next.
       next.seed = randomSeed(10);
-      next.game = createGame(next.seed, 'members', ENTITIES);
+      next.game = createGame(next.seed, 'members', ENTITIES, next.mode);
       return next;
     }
 
@@ -147,7 +169,7 @@ export function cleanName(raw: string): string {
 }
 
 function label(team: Team): string {
-  return team === 'red' ? 'Red' : 'Blue';
+  return labelFor(team);
 }
 
 export function emptySeat(): { team: null; seat: Seat | null } {

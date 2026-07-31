@@ -4,6 +4,7 @@ import { TEAM_NAME } from './Scoreboard.js';
 const RESULT_TEXT: Record<string, string> = {
   red: 'a Red card',
   blue: 'a Blue card',
+  violet: 'one of theirs',
   neutral: 'a bystander',
   assassin: 'the assassin',
 };
@@ -17,7 +18,8 @@ function describe(entry: LogEntry): string {
     case 'pass':
       return `${TEAM_NAME[entry.team]} ended their turn`;
     case 'end':
-      return `${TEAM_NAME[entry.winner]} win — ${entry.reason}`;
+      // Solo has nobody to hand a win to, so a loss carries no winner.
+      return entry.winner ? `${TEAM_NAME[entry.winner]} win — ${entry.reason}` : entry.reason;
   }
 }
 

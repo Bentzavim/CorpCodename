@@ -17,6 +17,10 @@
   --red-soft: #8c2b24;
   --blue: #2f6fb0;
   --blue-soft: #24547f;
+  /* Violet, for the bench that plays alone — an Aldermanic gown colour, and
+     pale enough to sit apart from the two facing benches. */
+  --violet: #9b8ec4;
+  --violet-soft: #6f639b;
   --neutral: #8d8578;
   --neutral-soft: #6a6459;
   --assassin: #0b0d12;
@@ -282,6 +286,47 @@ a {
   color: #6ba6de;
 }
 
+/* --- the violet bench, playing alone --------------------------------------- */
+
+.scoreboard--solo {
+  grid-template-columns: 1fr 1fr;
+}
+
+.score--violet.score--active,
+.score--violet.score--won {
+  border-color: var(--violet);
+  box-shadow: inset 0 0 0 1px var(--violet-soft), 0 0 18px -8px var(--violet);
+}
+
+.score--violet .score__count {
+  color: #c3b6e8;
+}
+
+.score--clock {
+  opacity: 1;
+}
+
+.score--clock .score__count {
+  color: var(--muted);
+}
+
+.score--clock.is-low {
+  border-color: var(--gold);
+}
+
+.score--clock.is-low .score__count {
+  color: var(--gold);
+}
+
+.cluebar--violet {
+  border-left-color: var(--violet);
+}
+
+.cluebar--lost {
+  border-left-color: var(--assassin);
+  background: linear-gradient(90deg, rgb(11 13 18 / 60%), transparent 55%), var(--surface);
+}
+
 .score__team {
   font-weight: 600;
   font-size: 0.95rem;
@@ -477,6 +522,12 @@ a {
   color: #f2f8ff;
 }
 
+.card--revealed.card--violet {
+  background: var(--violet);
+  border-color: var(--violet-soft);
+  color: #191428;
+}
+
 .card--revealed.card--neutral {
   background: var(--neutral);
   border-color: var(--neutral-soft);
@@ -503,6 +554,11 @@ a {
 .card--peek.card--blue {
   border-color: var(--blue);
   background: linear-gradient(180deg, rgb(47 111 176 / 22%), var(--surface));
+}
+
+.card--peek.card--violet {
+  border-color: var(--violet);
+  background: linear-gradient(180deg, rgb(155 142 196 / 26%), var(--surface));
 }
 
 .card--peek.card--neutral {
@@ -1024,6 +1080,21 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: 1rem;
+}
+
+.lobby__teams--solo {
+  grid-template-columns: minmax(15rem, 22rem);
+}
+
+.lobby__team--violet {
+  border-top-color: var(--violet);
+}
+
+.lobby__mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: flex-start;
 }
 
 .lobby__team {

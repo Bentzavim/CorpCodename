@@ -19,16 +19,20 @@ export function localPublicGame(game: GameState, spymaster: boolean): PublicGame
       revealed: card.revealed,
       kind: card.revealed || spymaster ? card.kind : null,
     })),
+    mode: game.mode,
     startingTeam: game.startingTeam,
     turn: game.turn,
+    turnsLeft: game.turnsLeft,
     guessesLeft: encodeGuesses(game.guessesLeft),
     clues: game.clues,
     log: game.log,
     winner: game.winner,
+    lost: game.lost,
     endReason: game.endReason,
     remaining: {
       red: remaining(game.cards, 'red'),
       blue: remaining(game.cards, 'blue'),
+      violet: remaining(game.cards, 'violet'),
     },
   };
 }

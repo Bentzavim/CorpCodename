@@ -36,6 +36,7 @@ export function newPlayerId(): PlayerId {
 export function blankRoom(code: string, hostId: PlayerId, hostName: string, now = Date.now()): Room {
   return {
     code,
+    mode: 'duel',
     seed: randomSeed(10),
     hostId,
     players: [{ id: hostId, name: cleanName(hostName), team: null, seat: null, lastSeen: now }],

@@ -1,5 +1,5 @@
-import { remaining } from '../game/engine.js';
-import type { Team } from '../game/types.js';
+import { labelFor, remaining } from '../game/engine.js';
+import type { GameMode, Team } from '../game/types.js';
 import {
   DISCONNECT_AFTER_MS,
   type Player,
@@ -52,30 +52,33 @@ export function publicGame(room: Room, viewer: Player | undefined): PublicGame |
       // Revealed cards are public knowledge; unrevealed ones only to spymasters.
       kind: card.revealed || seesKey ? card.kind : null,
     })),
+    mode: game.mode,
     startingTeam: game.startingTeam,
     turn: game.turn,
+    turnsLeft: game.turnsLeft,
     guessesLeft: encodeGuesses(game.guessesLeft),
     clues: game.clues,
     log: game.log,
     winner: game.winner,
+    lost: game.lost,
     endReason: game.endReason,
     remaining: {
       red: remaining(game.cards, 'red'),
       blue: remaining(game.cards, 'blue'),
+      violet: remaining(game.cards, 'violet'),
     },
   };
 }
 
 /** Why the host cannot start yet, or null when the room is ready. */
-export function startBlocker(players: Player[]): string | null {
-  const teams: Team[] = ['red', 'blue'];
+export function startBlocker(players: Player[], mode: GameMode = 'duel'): string | null {
+  const teams: Team[] = mode === 'solo' ? ['violet'] : ['red', 'blue'];
   for (const team of teams) {
     const seated = players.filter((p) => p.team === team);
-    if (!seated.some((p) => p.seat === 'spymaster')) {
-      return `${team === 'red' ? 'Red' : 'Blue'} needs a spymaster.`;
-    }
+    const name = labelFor(team);
+    if (!seated.some((p) => p.seat === 'spymaster')) return `${name} needs a spymaster.`;
     if (!seated.some((p) => p.seat === 'operative')) {
-      return `${team === 'red' ? 'Red' : 'Blue'} needs at least one operative.`;
+      return `${name} needs at least one operative.`;
     }
   }
   return null;
@@ -85,6 +88,7 @@ export function publicRoom(room: Room, viewerId: PlayerId, now = Date.now()): Pu
   const viewer = room.players.find((p) => p.id === viewerId);
   return {
     code: room.code,
+    mode: room.mode,
     version: room.version,
     hostId: room.hostId,
     you: viewer
@@ -92,6 +96,6 @@ export function publicRoom(room: Room, viewerId: PlayerId, now = Date.now()): Pu
       : { id: viewerId, name: '', team: null, seat: null, connected: true },
     players: room.players.map((p) => publicPlayer(p, now)),
     game: publicGame(room, viewer),
-    blocker: startBlocker(room.players),
+    blocker: startBlocker(room.players, room.mode),
   };
 }

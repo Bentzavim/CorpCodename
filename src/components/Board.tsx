@@ -10,7 +10,7 @@ interface Props {
 
 export function Board({ game, canGuess = true, onReveal }: Props) {
   // Guessing is only open once the spymaster has given a clue for this turn.
-  const locked = !canGuess || game.winner !== null || game.guessesLeft === null;
+  const locked = !canGuess || game.winner !== null || game.lost || game.guessesLeft === null;
 
   return (
     <div className="board" role="grid" aria-label="Codenames board">

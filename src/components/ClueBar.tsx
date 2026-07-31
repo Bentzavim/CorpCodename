@@ -31,17 +31,19 @@ export function ClueBar({
   const [unlimited, setUnlimited] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const awaitingClue = !game.winner && game.guessesLeft === null;
+  const awaitingClue = !game.winner && !game.lost && game.guessesLeft === null;
 
   // Hand focus to the incoming spymaster as soon as the turn flips.
   useEffect(() => {
     if (awaitingClue) inputRef.current?.focus();
   }, [awaitingClue, game.turn]);
 
-  if (game.winner) {
+  if (game.winner || game.lost) {
     return (
-      <div className={`cluebar cluebar--over cluebar--${game.winner}`}>
-        <strong>{TEAM_NAME[game.winner]} win.</strong>
+      <div className={`cluebar cluebar--over cluebar--${game.winner ?? 'lost'}`}>
+        <strong>
+          {game.winner ? `${TEAM_NAME[game.winner]} win.` : 'Lost.'}
+        </strong>
         <span>{game.endReason}</span>
       </div>
     );
