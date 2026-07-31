@@ -90,9 +90,8 @@ constant each in `src/game/types.ts`:
 
 ## Turn by turn
 
-The game walks through turns rather than leaving the board open:
-
-Both shapes share the same turn:
+Both shapes share the same turn, and the game walks through it rather than
+leaving the board open:
 
 1. The spymaster gives a clue and a number. It has to be **one word** — the form
    will not submit two. Nothing can be turned over before a clue is in.
