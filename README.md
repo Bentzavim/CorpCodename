@@ -31,7 +31,7 @@ Vercel needs no setup beyond importing the repo: its Vite preset already runs
 on their own. The seed and the room code live in the URL *hash*, so no SPA
 rewrite rule is needed — a shared link never reaches the server as a path.
 
-Online rooms want one environment variable pair; see
+Online rooms additionally need a Redis; see
 [Rooms need somewhere to live](#rooms-need-somewhere-to-live).
 
 `vercel.json` exists only to cache the portraits. They live in `public/members/`
@@ -99,7 +99,7 @@ Actions go up as ordinary `POST`s to `/api/room`; state comes back down a
 Server-Sent Events stream from `/api/stream`. SSE needs no protocol upgrade, so
 it runs on an ordinary serverless function, and `EventSource` reconnects by
 itself when the platform closes a long request — which it will, so the stream
-closes itself at 50s and the client resumes from its last version.
+closes itself at 25s and the client resumes from its last version.
 
 ### Rooms need somewhere to live
 
@@ -110,26 +110,35 @@ single instance, but breaks as soon as the platform runs a second one: two
 players get two different rooms, or a room seems to vanish. Fine for `npm run
 dev`; **not fine in production**.
 
-**To fix it:** Vercel dashboard → **Storage** → add a Redis (Upstash is the
-usual one) → connect it to this project → redeploy. Nothing to configure: the
-integration sets the variables and the store switches over on its own.
+**To fix it:** Vercel dashboard → **Storage** → add a Redis → connect it to this
+project → redeploy. Nothing to configure: the integration sets the variables and
+the store switches over on its own.
+
+Either dialect works, and which one you get depends on the provider:
+
+- a **`redis://` connection string** (`REDIS_URL`, `KV_URL`) — preferred, because
+  it brings real pub/sub, so a move reaches the other players the instant it
+  lands;
+- **Upstash's HTTP API** (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) — no
+  persistent connection, but no subscriptions either, so each player polls their
+  own room instead.
 
 `GET /api/room` in a browser reports what the deployment can actually see, which
 is the quickest way to tell a missing integration from a half-connected one:
 
 ```json
-{ "ok": true, "store": "redis", "found": ["KV_REST_API_URL", "KV_REST_API_TOKEN"] }
+{ "ok": true, "store": "redis", "transport": "tcp", "found": ["REDIS_URL"] }
 ```
 
-Variable *names* only — never values. When it still says `memory` it says why:
-half a pair set, or a `REDIS_URL` connection string from a provider that offers
-TCP but not the REST API this store speaks.
+Variable *names* only — never values, since a connection string carries a
+password. When it still says `memory` it says why: half a REST pair, or a value
+that is not a `redis://` URL.
 
-Because REST has no persistent subscription, each connected player polls their
-own room — briskly for a few seconds after something happens, then easing off to
-2.5s while the table thinks. A four-player game costs roughly a couple of
-thousand Redis commands, so a free tier's daily allowance is worth an eye if you
-play a lot; a flat fast poll would have spent that on a single game.
+On the REST transport each player polls their own room — briskly for a few
+seconds after something happens, then easing off to 2.5s while the table thinks,
+because a flat fast poll would spend a free tier's daily allowance on a single
+sitting. On TCP there is no polling at all: a game costs about a hundred
+commands regardless of how long anyone spends thinking.
 
 Rooms expire 12 hours after their last request, in either store.
 
