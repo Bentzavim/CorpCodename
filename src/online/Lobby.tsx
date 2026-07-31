@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { PublicRoom, RoomAction, Seat } from '../room/types.js';
 import type { Team } from '../game/types.js';
 import { TEAM_NAME } from '../components/Scoreboard.js';
+import { inviteLink } from './useHashRoom.js';
 
 interface Props {
   room: PublicRoom;
@@ -14,10 +16,33 @@ const SEATS: { seat: Seat; label: string; note: string }[] = [
   { seat: 'operative', label: 'Operative', note: 'turns the cards over' },
 ];
 
+/** One link per chair, so each player opens theirs and is simply seated. */
+function SeatLinks({ room }: { room: PublicRoom }) {
+  const [copied, setCopied] = useState<Seat | null>(null);
+  const copy = (seat: Seat) => {
+    const link = inviteLink(room.code, seat);
+    void navigator.clipboard
+      ?.writeText(window.self === window.top ? link : room.code)
+      .then(() => {
+        setCopied(seat);
+        setTimeout(() => setCopied(null), 2000);
+      }, () => setCopied(null));
+  };
+  return (
+    <div className="seatlinks">
+      {SEATS.map(({ seat, label }) => (
+        <button key={seat} type="button" className="btn" onClick={() => copy(seat)}>
+          {copied === seat ? 'Copied' : `Copy the ${label.toLowerCase()}’s link`}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Lobby({ room, act, onCopyInvite, copied }: Props) {
   const isHost = room.you.id === room.hostId;
-  const solo = room.mode === 'solo';
-  const teams: Team[] = solo ? ['violet'] : ['red', 'blue'];
+  const relay = room.mode === 'relay';
+  const teams: Team[] = relay ? ['violet'] : ['red', 'blue'];
 
   return (
     <div className="lobby">
@@ -32,9 +57,12 @@ export function Lobby({ room, act, onCopyInvite, copied }: Props) {
       </header>
 
       <p className="lobby__intro">
-        Share the link. Everyone picks a seat — each bench needs one spymaster and at
-        least one operative.
+        {relay
+          ? 'Two players, one bench, a turn each. The spymaster gives a clue and sends the guesser their link; the guesser guesses and sends it back.'
+          : 'Share the link. Everyone picks a seat — each bench needs one spymaster and at least one operative.'}
       </p>
+
+      {relay && <SeatLinks room={room} />}
 
       {isHost ? (
         <div className="lobby__mode">
@@ -42,34 +70,34 @@ export function Lobby({ room, act, onCopyInvite, copied }: Props) {
           <div className="join__mode">
             <button
               type="button"
-              className={`btn ${!solo ? 'btn--primary' : ''}`}
+              className={`btn ${!relay ? 'btn--primary' : ''}`}
               onClick={() => act({ type: 'mode', mode: 'duel' })}
-              aria-pressed={!solo}
+              aria-pressed={!relay}
             >
               Red v Blue
             </button>
             <button
               type="button"
-              className={`btn ${solo ? 'btn--primary' : ''}`}
-              onClick={() => act({ type: 'mode', mode: 'solo' })}
-              aria-pressed={solo}
+              className={`btn ${relay ? 'btn--primary' : ''}`}
+              onClick={() => act({ type: 'mode', mode: 'relay' })}
+              aria-pressed={relay}
             >
-              Violet, alone
+              Violet, two players
             </button>
           </div>
           <p className="lobby__blocker">
-            {solo
-              ? 'One bench against the clock: nine Members, nine turns, and every other card but the assassin costs you a turn.'
+            {relay
+              ? 'One bench, two players, turn by turn: nine Members to find in nine turns, and every card but those and the assassin costs a turn.'
               : 'Two benches, nine cards and eight, first to find their own.'}
           </p>
         </div>
       ) : (
         <p className="lobby__blocker">
-          {solo ? 'Violet, alone — one bench against the clock.' : 'Red against Blue.'}
+          {relay ? 'Violet Bench — two players, a turn each.' : 'Red against Blue.'}
         </p>
       )}
 
-      <div className={`lobby__teams ${solo ? 'lobby__teams--solo' : ''}`}>
+      <div className={`lobby__teams ${relay ? 'lobby__teams--relay' : ''}`}>
         {teams.map((team) => (
           <section key={team} className={`lobby__team lobby__team--${team}`}>
             <h2>{TEAM_NAME[team]}</h2>

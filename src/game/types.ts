@@ -8,7 +8,7 @@ export type DuelTeam = 'red' | 'blue';
  * Head to head, or one bench against the clock. The mode decides how the key
  * card is dealt and what ends a turn, and nothing else.
  */
-export type GameMode = 'duel' | 'solo';
+export type GameMode = 'duel' | 'relay';
 
 /** What is actually under a card. */
 export type CardKind = Team | 'neutral' | 'assassin';
@@ -92,12 +92,12 @@ export const ASSASSIN_CARDS = 1;
  * head-to-head game; with no opposition to hand cards to, every other card
  * except the assassin is a bystander.
  */
-export const SOLO_TEAM: Team = 'violet';
-export const SOLO_TEAM_CARDS = FIRST_TEAM_CARDS;
-export const SOLO_NEUTRAL_CARDS = BOARD_SIZE - SOLO_TEAM_CARDS - ASSASSIN_CARDS;
+export const RELAY_TEAM: Team = 'violet';
+export const RELAY_TEAM_CARDS = FIRST_TEAM_CARDS;
+export const RELAY_NEUTRAL_CARDS = BOARD_SIZE - RELAY_TEAM_CARDS - ASSASSIN_CARDS;
 /**
  * How many turns the bench gets. Without a limit the only way to lose would be
  * the assassin, and a patient player would always win eventually — so this is
  * the clock the neutrals cost you.
  */
-export const SOLO_TURNS = 9;
+export const RELAY_TURNS = 9;

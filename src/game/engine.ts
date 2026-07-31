@@ -5,10 +5,10 @@ import {
   FIRST_TEAM_CARDS,
   NEUTRAL_CARDS,
   SECOND_TEAM_CARDS,
-  SOLO_NEUTRAL_CARDS,
-  SOLO_TEAM,
-  SOLO_TEAM_CARDS,
-  SOLO_TURNS,
+  RELAY_NEUTRAL_CARDS,
+  RELAY_TEAM,
+  RELAY_TEAM_CARDS,
+  RELAY_TURNS,
   type BoardCard,
   type CardKind,
   type DuelTeam,
@@ -22,11 +22,11 @@ export function otherTeam(team: DuelTeam): DuelTeam {
   return team === 'red' ? 'blue' : 'red';
 }
 
-export function isSolo(state: GameState): boolean {
-  return state.mode === 'solo';
+export function isRelay(state: GameState): boolean {
+  return state.mode === 'relay';
 }
 
-/** True once the game is decided — won head to head, or won or lost solo. */
+/** True once the game is decided — won head to head, or won or lost on one bench. */
 export function isOver(state: GameState): boolean {
   return state.winner !== null || state.lost;
 }
@@ -35,15 +35,15 @@ export function isOver(state: GameState): boolean {
  * Builds the key card.
  *
  * Head to head the starting team gets the extra card, so the split is always
- * 9/8/7/1 whoever goes first. Solo the bench gets that same nine, and with no
+ * 9/8/7/1 whoever goes first. On one bench it gets that same nine, and with no
  * opposition to hand a card to, everything else but the assassin is a bystander.
  */
 function buildKinds(mode: GameMode, startingTeam: Team, rng: () => number): CardKind[] {
   const kinds: CardKind[] =
-    mode === 'solo'
+    mode === 'relay'
       ? [
-          ...Array<CardKind>(SOLO_TEAM_CARDS).fill(SOLO_TEAM),
-          ...Array<CardKind>(SOLO_NEUTRAL_CARDS).fill('neutral'),
+          ...Array<CardKind>(RELAY_TEAM_CARDS).fill(RELAY_TEAM),
+          ...Array<CardKind>(RELAY_NEUTRAL_CARDS).fill('neutral'),
           ...Array<CardKind>(ASSASSIN_CARDS).fill('assassin'),
         ]
       : [
@@ -76,7 +76,7 @@ export function createGame(
   // One rng drives every decision, so the seed fully determines the board.
   const rng = createRng(`${deckId}:${mode}:${seed}`);
   const picked = shuffle(entities, rng).slice(0, BOARD_SIZE);
-  const startingTeam: Team = mode === 'solo' ? SOLO_TEAM : rng() < 0.5 ? 'red' : 'blue';
+  const startingTeam: Team = mode === 'relay' ? RELAY_TEAM : rng() < 0.5 ? 'red' : 'blue';
   const kinds = buildKinds(mode, startingTeam, rng);
 
   return {
@@ -86,7 +86,7 @@ export function createGame(
     cards: picked.map((entity, i) => ({ entity, kind: kinds[i], revealed: false })),
     startingTeam,
     turn: startingTeam,
-    turnsLeft: mode === 'solo' ? SOLO_TURNS : null,
+    turnsLeft: mode === 'relay' ? RELAY_TURNS : null,
     guessesLeft: null,
     clues: [],
     log: [],
@@ -124,11 +124,12 @@ export function giveClue(state: GameState, word: string, count: number | null): 
 }
 
 /**
- * Ends the turn. Head to head that hands over to the other bench; solo there is
- * nobody to hand to, so the turn simply costs one off the clock.
+ * Ends the turn. Head to head that hands over to the other bench; on one bench
+ * there is no other side to hand to, so the turn costs one off the clock and
+ * play returns to the spymaster for the next clue.
  */
 function endTurn(state: GameState): GameState {
-  if (state.mode === 'solo') {
+  if (state.mode === 'relay') {
     const turnsLeft = Math.max(0, (state.turnsLeft ?? 0) - 1);
     const spent: GameState = { ...state, turnsLeft, guessesLeft: null };
     if (turnsLeft > 0) return spent;
@@ -172,8 +173,8 @@ export function revealCard(state: GameState, index: number): GameState {
 
   if (card.kind === 'assassin') {
     const reason = `${labelFor(guessingTeam)} picked the assassin.`;
-    // Solo there is nobody to hand the win to — the game is simply lost.
-    const winner = state.mode === 'solo' ? null : otherTeam(guessingTeam as DuelTeam);
+    // One bench has nobody to hand the win to — the game is simply lost.
+    const winner = state.mode === 'relay' ? null : otherTeam(guessingTeam as DuelTeam);
     return {
       ...next,
       winner,
@@ -185,7 +186,7 @@ export function revealCard(state: GameState, index: number): GameState {
   }
 
   // Revealing any team's card can finish that team off, including the opponent's.
-  const contenders: Team[] = state.mode === 'solo' ? [SOLO_TEAM] : ['red', 'blue'];
+  const contenders: Team[] = state.mode === 'relay' ? [RELAY_TEAM] : ['red', 'blue'];
   const finished = contenders.find((t) => remaining(cards, t) === 0);
   if (finished) {
     const reason = `${labelFor(finished)} found all their Members.`;

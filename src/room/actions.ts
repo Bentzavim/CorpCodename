@@ -99,7 +99,7 @@ export function apply(room: Room, playerId: PlayerId, action: RoomAction, now = 
     }
 
     case 'mode': {
-      if (action.mode !== 'solo' && action.mode !== 'duel') {
+      if (action.mode !== 'relay' && action.mode !== 'duel') {
         throw new RoomError('Unknown mode.');
       }
       next.mode = action.mode;
@@ -112,7 +112,7 @@ export function apply(room: Room, playerId: PlayerId, action: RoomAction, now = 
 
     case 'sit': {
       const { team, seat } = action;
-      const allowed: Team[] = room.mode === 'solo' ? ['violet'] : ['red', 'blue'];
+      const allowed: Team[] = room.mode === 'relay' ? ['violet'] : ['red', 'blue'];
       if (team !== null && !allowed.includes(team)) {
         throw new RoomError('That bench is not playing this game.');
       }

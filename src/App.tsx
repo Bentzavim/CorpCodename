@@ -24,7 +24,10 @@ function readSeed(): string {
 }
 
 function readMode(): GameMode {
-  return hashParams().get('mode') === 'solo' ? 'solo' : 'duel';
+  // "solo" is the name this mode shipped under before it was understood to be
+  // two people passing a link; links using it still work.
+  const mode = hashParams().get('mode');
+  return mode === 'relay' || mode === 'solo' ? 'relay' : 'duel';
 }
 
 export default function App() {
@@ -105,7 +108,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
   }, [seed, entities, playable, mode]);
 
   useEffect(() => {
-    const hash = mode === 'solo' ? `#seed=${seed}&mode=solo` : `#seed=${seed}`;
+    const hash = mode === 'relay' ? `#seed=${seed}&mode=relay` : `#seed=${seed}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
   }, [seed, mode]);
 
@@ -125,7 +128,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
 
   const shareLink = useCallback(() => {
     const { origin, pathname } = window.location;
-    const suffix = mode === 'solo' ? '&mode=solo' : '';
+    const suffix = mode === 'relay' ? '&mode=relay' : '';
     const text = framed ? seed : `${origin}${pathname}#seed=${seed}${suffix}`;
     void navigator.clipboard?.writeText(text).then(
       () => {
@@ -180,7 +183,7 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
                 aria-label="How many benches are playing"
               >
                 <option value="duel">Red v Blue</option>
-                <option value="solo">Violet, alone</option>
+                <option value="relay">Violet, two players</option>
               </select>
             </label>
 

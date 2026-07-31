@@ -79,21 +79,30 @@ would have bought seven.
 **Red v Blue** is the usual thing: 25 cards split 9 / 8 / 7 bystanders / 1
 assassin, two spymasters, first bench to find all their own Members wins.
 
-**Violet, alone** is one bench against the clock. The Violet Bench — violet
-being an Aldermanic gown colour — gets the same **nine** Members the opening
-bench gets head to head. There is no opposition to hand a card to, so every
-other card but the assassin is a **bystander, and every bystander ends the
-turn**. The bench has **nine turns**; a bystander, a spent set of guesses or an
-ended turn each cost one. Find all nine and you win; run out of turns, or turn
-over the assassin, and you lose. Nobody wins in your place.
+**Violet, two players** is one bench shared by two people, a turn each. The
+Violet Bench — violet being an Aldermanic gown colour — gets the same **nine**
+Members the opening bench gets head to head. There is no opposition to hand a
+card to, so every other card but the assassin is a **bystander, and every
+bystander ends the turn**. The bench has **nine turns**; a bystander, a spent set
+of guesses or an ended turn each cost one. Find all nine and you win; run out of
+turns, or turn over the assassin, and you lose. Nobody wins in your place.
+
+It is played by passing the baton rather than sitting together. Online, one
+player is the spymaster and the other the guesser: the spymaster gives a clue
+and sends the guesser their link, the guesser guesses and sends it back. Neither
+has to be there when the other moves — the room waits. Each chair has its own
+invite link (`#room=ABCD&seat=operative`), so opening the one you were sent
+seats you without picking anything, and the seat is dropped from the URL once
+claimed so a reload does not re-claim it. On one device it is the same game with
+the handoff screen in place of the link.
 
 Two things there were choices rather than requirements, and both are one
 constant each in `src/game/types.ts`:
 
-- **`SOLO_TURNS = 9`.** Without a clock the assassin would be the only way to
-  lose, and a patient player would always win eventually. Nine matches the nine
+- **`RELAY_TURNS = 9`.** Without a clock the assassin would be the only way to
+  lose, and a patient pair would always win eventually. Nine matches the nine
   cards; raise it to make the game gentler.
-- **`SOLO_TEAM_CARDS = FIRST_TEAM_CARDS`** — nine, the opening bench's share
+- **`RELAY_TEAM_CARDS = FIRST_TEAM_CARDS`** — nine, the opening bench's share
   rather than the second's eight.
 
 ## Turn by turn
@@ -110,7 +119,7 @@ leaving the board open:
 4. A correct card lets them carry on; a bystander, the other bench's card, or
    running out of guesses ends the turn. The assassin ends the game. Head to
    head the other bench's card is credited to them, so a bad guess can lose you
-   the game; solo, an ended turn costs one off the clock.
+   the game; on one bench, an ended turn costs one off the clock.
 5. A **handoff screen** covers the board between turns. The key card is hidden
    and the spymaster toggle is locked until the incoming spymaster confirms, so
    a shared screen cannot leak the previous team's view.
@@ -122,13 +131,13 @@ is forced off at every handoff and every new board.
 
 **Play online** opens a room with a four-letter code. Share the link, everyone
 picks a seat, and the host deals. The host also chooses whether it is Red v Blue
-or Violet alone; changing it empties the seats, since the benches on offer
-change with it.
+or the two-player Violet Bench; changing it empties the seats, since the chairs
+on offer change with it.
 
 Each player gets their own screen showing only what their seat is entitled to:
 
 - **Spymasters** see the key card — both of them see the same one, as in the box.
-  Solo there is just the one.
+  On the Violet Bench there is just the one.
 - **Operatives** see colours only on cards already turned over. The rest of the
   key card is not hidden in their browser, it is never sent to it.
 - Only the spymaster on turn can give a clue; only that team's operatives can

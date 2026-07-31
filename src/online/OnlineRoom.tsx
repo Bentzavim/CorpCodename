@@ -7,6 +7,8 @@ import type { PublicRoom } from '../room/types.js';
 import { Lobby } from './Lobby.js';
 import { JoinScreen } from './JoinScreen.js';
 import { useRoom, createRoom, joinRoom, loadIdentity } from './useRoom.js';
+import { Handover } from './Handover.js';
+import { inviteLink, readWantedSeat } from './useHashRoom.js';
 
 interface Props {
   code: string | null;
@@ -16,6 +18,9 @@ interface Props {
 
 export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
   const [playerId, setPlayerId] = useState<string | null>(() => loadIdentity()?.id ?? null);
+  // Read once, at mount: joining rewrites the hash to drop the seat, so by the
+  // time the room arrives the invitation is gone from the URL.
+  const [wantedSeat] = useState(readWantedSeat);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
@@ -63,10 +68,24 @@ export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
     void enter(known.name, code);
   }, [code, joined, enter]);
 
+  // An invite link that names a seat should seat you in it, so a game handed
+  // back and forth does not ask each player to find their chair every time.
+  const claimed = useRef(false);
+  useEffect(() => {
+    if (claimed.current || !room) return;
+    if (!wantedSeat || room.you.seat !== null || room.game) return;
+    const taken = room.players.some(
+      (p) => p.id !== room.you.id && p.seat === wantedSeat && p.team !== null,
+    );
+    claimed.current = true;
+    if (taken) return;
+    const bench = room.mode === 'relay' ? 'violet' : 'red';
+    act({ type: 'sit', team: bench, seat: wantedSeat });
+  }, [room, act, wantedSeat]);
+
   const copyInvite = useCallback(() => {
     if (!room) return;
-    const { origin, pathname } = window.location;
-    const link = `${origin}${pathname}#room=${room.code}`;
+    const link = inviteLink(room.code);
     void navigator.clipboard?.writeText(window.self === window.top ? link : room.code).then(
       () => {
         setCopied(true);
@@ -107,6 +126,7 @@ export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
           {refusal}
         </p>
       )}
+      {room.mode === 'relay' && room.game && <Handover room={room} />}
       {room.game ? (
         <PlayingRoom room={room} act={act} />
       ) : (

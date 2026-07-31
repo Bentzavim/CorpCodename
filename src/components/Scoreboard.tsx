@@ -9,11 +9,11 @@ const TEAM_NAME: Record<Team, string> = {
 };
 
 export function Scoreboard({ game }: { game: PublicGame }) {
-  const solo = game.mode === 'solo';
-  const benches: Team[] = solo ? ['violet'] : ['red', 'blue'];
+  const relay = game.mode === 'relay';
+  const benches: Team[] = relay ? ['violet'] : ['red', 'blue'];
 
   return (
-    <div className={`scoreboard ${solo ? 'scoreboard--solo' : ''}`}>
+    <div className={`scoreboard ${relay ? 'scoreboard--relay' : ''}`}>
       {benches.map((team) => {
         const left = game.remaining[team];
         const active = !game.winner && !game.lost && game.turn === team;
@@ -39,7 +39,7 @@ export function Scoreboard({ game }: { game: PublicGame }) {
         );
       })}
 
-      {solo && game.turnsLeft !== null && (
+      {relay && game.turnsLeft !== null && (
         <div className={`score score--clock ${game.turnsLeft <= 2 ? 'is-low' : ''}`}>
           <span className="score__count">{game.turnsLeft}</span>
           <span className="score__team">Turns left</span>

@@ -72,7 +72,7 @@ export function publicGame(room: Room, viewer: Player | undefined): PublicGame |
 
 /** Why the host cannot start yet, or null when the room is ready. */
 export function startBlocker(players: Player[], mode: GameMode = 'duel'): string | null {
-  const teams: Team[] = mode === 'solo' ? ['violet'] : ['red', 'blue'];
+  const teams: Team[] = mode === 'relay' ? ['violet'] : ['red', 'blue'];
   for (const team of teams) {
     const seated = players.filter((p) => p.team === team);
     const name = labelFor(team);
