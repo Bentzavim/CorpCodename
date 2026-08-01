@@ -75,8 +75,22 @@ const PARTICLE =
   /^(van|von|de|del|della|di|da|dos|du|la|le|el|al|ten|ter|bin|ibn|abu|mac|mc|st\.?|saint)$/i;
 
 /**
+ * Members who go by a given name that is not their first.
+ *
+ * The register prints the name on the roll, which is not always the name anyone
+ * uses, and nothing in the string says which given name that is — it has to be
+ * known. Kept here rather than in roster.ts because that file is rewritten
+ * wholesale by both ingesters and these corrections would be lost with it.
+ *
+ * Keyed on the name with offices and post-nominals already stripped.
+ */
+const KNOWN_AS: Record<string, string> = {
+  'James Henry George Pollard': 'Henry',
+};
+
+/**
  * The name as it goes on a card: a title only if it is Sir, Dame or Hon., then
- * the first name and the surname. Middle names, offices and post-nominals all
+ * the given name and the surname. Middle names, offices and post-nominals all
  * come off, so 25 of these can be read at a glance on a board.
  */
 export function displayName(raw: string): string {
@@ -101,7 +115,7 @@ export function displayName(raw: string): string {
   const particle = words.findIndex((w, i) => i > 0 && i < words.length - 1 && PARTICLE.test(w));
   const start = particle > 0 ? particle : words.length - 1;
   const surname = words.slice(start).join(' ');
-  const forename = words.length > 1 ? words[0] : '';
+  const forename = words.length > 1 ? (KNOWN_AS[rest] ?? words[0]) : '';
 
   return [title, forename, surname].filter(Boolean).join(' ');
 }
