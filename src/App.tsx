@@ -3,6 +3,7 @@ import { Board } from './components/Board.js';
 import { ClueBar } from './components/ClueBar.js';
 import { GameLog } from './components/GameLog.js';
 import { RosterImport } from './components/RosterImport.js';
+import { Rules } from './components/Rules.js';
 import { Scoreboard } from './components/Scoreboard.js';
 import { TurnHandoff } from './components/TurnHandoff.js';
 import { membersToEntities, type MemberRecord } from './data/members.js';
@@ -60,7 +61,32 @@ function Brand() {
         <h1>Corp Codenames</h1>
         <p>Members of the City of London Corporation</p>
       </div>
+      <div className="topbar__controls">
+        <RulesButton />
+      </div>
     </header>
+  );
+}
+
+/**
+ * The rules, on demand. Owns its own open state so it can be dropped anywhere a
+ * player might want them — which is everywhere, since half of learning this game
+ * is being reminded what the bonus guess is for.
+ */
+export function RulesButton({ mode = 'duel' }: { mode?: GameMode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="btn"
+        onClick={() => setOpen(true)}
+        title="The aim of the game, and how a turn goes"
+      >
+        Rules
+      </button>
+      {open && <Rules mode={mode} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -147,6 +173,12 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
           <p>Members of the City of London Corporation</p>
         </div>
 
+        {!playable && (
+          <div className="topbar__controls">
+            <RulesButton />
+          </div>
+        )}
+
         {playable && (
           <div className="topbar__controls">
             <label className="field">
@@ -186,6 +218,8 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
                 <option value="relay">Violet, two players</option>
               </select>
             </label>
+
+            <RulesButton mode={mode} />
 
             <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
               New game
