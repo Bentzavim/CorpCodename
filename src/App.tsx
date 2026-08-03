@@ -271,51 +271,19 @@ function LocalGame({
           </div>
         )}
 
+        {/* Only what you reach for mid-game. Everything about which board this
+            is lives beside the board itself, in "This board". */}
         {playable && (
           <div className="topbar__controls">
-            <label className="field">
-              <span>Seed</span>
-              <input
-                className="field__seed"
-                value={seed}
-                onChange={(e) => setSeed(normaliseSeed(e.target.value))}
-                spellCheck={false}
-                aria-label="Game seed — the same seed gives the same board"
-              />
-            </label>
-
             <button
               type="button"
-              className="btn"
-              onClick={shareLink}
-              title={
-                framed
-                  ? 'Copy the seed — type it in on another device for the same board'
-                  : 'Copy a link that opens this exact board'
-              }
+              className="btn btn--ghost"
+              onClick={onHome}
+              title="Back to the ways to play"
             >
-              {copied ? 'Copied' : framed ? 'Copy seed' : 'Share'}
+              Ways to play
             </button>
-            <label className="field">
-              <span>Benches</span>
-              <select
-                value={mode}
-                onChange={(e) => {
-                  setMode(e.target.value as GameMode);
-                  setSeed(randomSeed());
-                }}
-                aria-label="How many benches are playing"
-              >
-                <option value="duel">Red v Blue</option>
-                <option value="relay">Violet, two players</option>
-              </select>
-            </label>
-
             <RulesButton mode={mode} />
-
-            <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
-              New game
-            </button>
             <button
               type="button"
               className="btn"
@@ -324,13 +292,8 @@ function LocalGame({
             >
               Play online
             </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={onHome}
-              title="Back to the ways to play"
-            >
-              Ways to play
+            <button type="button" className="btn btn--primary" onClick={() => setSeed(randomSeed())}>
+              New game
             </button>
           </div>
         )}
@@ -405,8 +368,48 @@ function LocalGame({
                 </span>
               </button>
 
+              {/* Which board this is, and how to hand it to someone else.
+                  Beside the board rather than over it: you set these once and
+                  then leave them alone, and the top bar is for the things you
+                  touch every turn. */}
               <div className="panel">
-                <h2>Roster</h2>
+                <h2>This board</h2>
+                <label className="field field--wide">
+                  <span>Seed</span>
+                  <input
+                    className="field__seed"
+                    value={seed}
+                    onChange={(e) => setSeed(normaliseSeed(e.target.value))}
+                    spellCheck={false}
+                    aria-label="Game seed — the same seed gives the same board"
+                  />
+                </label>
+                <label className="field field--wide">
+                  <span>Benches</span>
+                  <select
+                    value={mode}
+                    onChange={(e) => {
+                      setMode(e.target.value as GameMode);
+                      setSeed(randomSeed());
+                    }}
+                    aria-label="How many benches are playing"
+                  >
+                    <option value="duel">Red v Blue</option>
+                    <option value="relay">Violet, two players</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={shareLink}
+                  title={
+                    framed
+                      ? 'Copy the seed — type it in on another device for the same board'
+                      : 'Copy a link that opens this exact board'
+                  }
+                >
+                  {copied ? 'Copied' : framed ? 'Copy seed' : 'Share this board'}
+                </button>
                 <p className="panel__note">
                   {roster.length} Members — {BOARD_SIZE} dealt each game.
                 </p>

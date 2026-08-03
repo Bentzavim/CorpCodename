@@ -6,7 +6,7 @@
 
 :root {
   /* The table. */
-  --baize: #1a3a2f;
+  --baize: #14332a;
   --baize-deep: #0e211b;
   --baize-lift: #2f5a49;
 
@@ -32,6 +32,14 @@
   --neutral: #8d8578;
   --neutral-soft: #6a6459;
   --assassin: #0b0d12;
+
+  /* Card stock. The cards are the one pale thing in the room — that is what
+     makes them read as cards lying on the cloth rather than as panels painted
+     onto it, and it is what gives a turned card its snap. */
+  --stock: #f2ece0;
+  --stock-2: #e3dbcb;
+  --stock-ink: #241f18;
+  --stock-line: rgb(0 0 0 / 28%);
 
   --radius: 12px;
   /* Two shadows apiece: a tight contact shadow where the card meets the cloth,
@@ -71,16 +79,18 @@ body {
      nothing to fetch and it survives the artifact's content policy intact. */
   background-color: var(--baize);
   background-image:
-    radial-gradient(130% 100% at 50% -5%, transparent 25%, rgb(4 12 9 / 70%) 100%),
+    /* The corners fall away hard: a table is lit from above, not evenly. */
+    radial-gradient(125% 95% at 50% -2%, transparent 26%, rgb(3 10 7 / 78%) 100%),
+    /* The pool of light that darkness is falling away from. */
+    radial-gradient(62% 42% at 50% -10%, rgb(168 226 192 / 22%) 0%, transparent 70%),
     var(--nap),
     var(--crush),
-    var(--pool),
-    radial-gradient(80% 50% at 50% -12%, rgb(126 182 152 / 20%) 0%, transparent 70%);
-  background-blend-mode: normal, overlay, soft-light, soft-light, screen;
-  background-repeat: no-repeat, repeat, repeat, repeat, no-repeat;
+    var(--pool);
+  background-blend-mode: normal, screen, overlay, soft-light, soft-light;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, repeat;
   /* Fixed keeps the table still while the board scrolls over it. */
   background-attachment: fixed;
-  background-size: cover, 180px 180px, 420px 420px, 900px 900px, cover;
+  background-size: cover, cover, 180px 180px, 420px 420px, 900px 900px;
 }
 
 /* A fixed background repaints the whole texture on every scroll frame, which
@@ -238,7 +248,9 @@ a {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 19rem;
+  /* The side column holds three short panels; anything wider was simply empty
+     cloth, taken off the board that needed it. */
+  grid-template-columns: minmax(0, 1fr) 16rem;
   gap: 1.25rem;
   align-items: start;
 }
@@ -504,12 +516,13 @@ a {
   aspect-ratio: 1 / 1.05;
   padding: 0;
   border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
-  /* A lit top edge and a contact shadow: the card is a thing lying on cloth,
-     not a panel painted onto it. */
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), var(--shadow-rest);
-  color: var(--ink);
+  border: 1px solid var(--stock-line);
+  background: linear-gradient(180deg, var(--stock), var(--stock-2));
+  /* A contact shadow and a wider soft one: the card is a thing lying on cloth,
+     not a panel painted onto it. Pale stock needs this more than dark did —
+     without it the card floats. */
+  box-shadow: 0 1px 2px rgb(0 0 0 / 50%), 0 14px 24px -10px rgb(0 0 0 / 70%);
+  color: var(--stock-ink);
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -520,8 +533,8 @@ a {
 
 .card:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), var(--shadow);
-  border-color: #587062;
+  box-shadow: 0 2px 3px rgb(0 0 0 / 45%), 0 20px 30px -12px rgb(0 0 0 / 75%);
+  border-color: rgb(0 0 0 / 40%);
 }
 
 .card:disabled {
@@ -541,13 +554,14 @@ a {
   font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  opacity: 0.75;
+  opacity: 0.6;
 }
 
-/* Turned over — the card takes the full team colour. */
+/* Turned over — the card takes the full team colour, and sits back down into
+   the cloth rather than standing off it. */
 .card--revealed {
   transform: none;
-  box-shadow: inset 0 2px 6px rgb(0 0 0 / 30%);
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 35%);
 }
 
 .card--revealed .avatar {
@@ -590,34 +604,38 @@ a {
   box-shadow: inset 0 0 24px rgb(192 57 47 / 35%);
 }
 
-/* Spymaster peek — a coloured edge, but the card still reads as unturned. */
+/* Spymaster peek — a coloured edge and a wash through the stock, but the card
+   still reads as unturned. The wash is the colour dropped into the paper rather
+   than laid over it, so a peeked card never looks like a turned one. */
 .card--peek {
   border-width: 2px;
 }
 
 .card--peek.card--red {
   border-color: var(--red);
-  background: linear-gradient(180deg, rgb(192 57 47 / 22%), var(--surface));
+  background: linear-gradient(180deg, #f4dcd7, #e9c8c1);
 }
 
 .card--peek.card--blue {
   border-color: var(--blue);
-  background: linear-gradient(180deg, rgb(47 111 176 / 22%), var(--surface));
+  background: linear-gradient(180deg, #dae6f3, #c9d8ea);
 }
 
 .card--peek.card--violet {
   border-color: var(--violet);
-  background: linear-gradient(180deg, rgb(155 142 196 / 26%), var(--surface));
+  background: linear-gradient(180deg, #e5e0f2, #d5cfe7);
 }
 
 .card--peek.card--neutral {
-  border-color: var(--neutral);
-  background: linear-gradient(180deg, rgb(141 133 120 / 20%), var(--surface));
+  border-color: var(--neutral-soft);
+  background: linear-gradient(180deg, #ebe5d9, #dcd4c4);
 }
 
+/* The one card that does not get to look like paper. */
 .card--peek.card--assassin {
   border-color: #d9534a;
   background: linear-gradient(180deg, #0b0d12, #1a0f10);
+  color: #f0ded9;
   box-shadow: inset 0 0 20px rgb(217 83 74 / 30%);
 }
 
