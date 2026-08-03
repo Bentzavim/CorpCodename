@@ -24,7 +24,11 @@ interface Route {
   title: string;
   who: string;
   blurb: string;
-  /** In the order they should be offered — the first is the one most people want. */
+  /**
+   * In the order they are offered. The first is the primary button, and both
+   * routes lead with online: a screen each is the way most people play, and it
+   * is the only way that works when the players are not in the same room.
+   */
   ways: { venue: Venue; label: string; note: string }[];
 }
 
@@ -40,14 +44,14 @@ const ROUTES: Route[] = [
       'operative, who cannot.',
     ways: [
       {
-        venue: 'screen',
-        label: 'Round one screen',
-        note: 'pass the device — it covers up between turns',
-      },
-      {
         venue: 'online',
         label: 'Open an online room',
         note: 'a screen each; share a four-letter code',
+      },
+      {
+        venue: 'screen',
+        label: 'Round one screen',
+        note: 'pass the device — it covers up between turns',
       },
     ],
   },
