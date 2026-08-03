@@ -495,12 +495,13 @@ a {
      the image, so the split holds whatever the card is scaled to. */
   display: grid;
   grid-template-rows: 3fr 2fr;
-  /* The 3:2 split is the point, not the card's height. A taller card buys a
-     little more portrait and costs a lot of board: at 1/1.16 the photo is 7x
-     the area of the old crest but the bottom two rows fall off a laptop screen,
-     and scanning all 25 at once is the game. This is ~5x the old area with the
-     board still nearly whole. */
-  aspect-ratio: 1 / 0.82;
+  /* The 3:2 split is the point; this is the height that makes it work. Now the
+     portrait is shown whole rather than cropped to fill, the row's shape decides
+     how much of the card's width a picture can use, and the old squat row left
+     an upright portrait as a narrow strip. Taller costs board — measured, the
+     bottom row already falls off a 1000px window either way, which is what makes
+     the trade worth taking rather than the reverse. */
+  aspect-ratio: 1 / 1.05;
   padding: 0;
   border-radius: var(--radius);
   border: 1px solid var(--line);
@@ -630,6 +631,32 @@ a {
   border-bottom: 1px solid rgb(0 0 0 / 35%);
 }
 
+/**
+ * The mount behind a portrait: the same photograph, blown up, blurred and pushed
+ * back, so a picture that does not fill the frame sits on its own colours rather
+ * than on a black bar. --shot is set on the element by Card; without it this
+ * paints nothing and the flat background shows through, which is what the
+ * generated crests want anyway.
+ */
+.card__media::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--shot, none);
+  background-size: cover;
+  background-position: 50% 25%;
+  filter: blur(16px) saturate(0.9) brightness(0.7);
+  /* Scaled past the edges so the blur has pixels to work with and does not
+     feather into transparency at the sides. */
+  transform: scale(1.5);
+}
+
+/* Turned over, the bench colour is the information; the mount gets out of its
+   way rather than competing with it. */
+.card--revealed .card__media::before {
+  opacity: 0.3;
+}
+
 /* Filling the row means the portrait carries the card, so it is worth the whole
    width rather than a token circle. */
 .card__media .avatar {
@@ -668,11 +695,17 @@ a {
 }
 
 .avatar--photo {
-  object-fit: cover;
-  /* The portraits are head-and-shoulders shots of varying height, so bias the
-     crop upwards — centring one cuts the face off at the chin. */
-  object-position: 50% 22%;
-  background: var(--bg-deep);
+  /* Whole, never cropped. The register's photographs run from 0.46 to 1.96 in
+     aspect, so filling the frame threw away most of the picture — at the shape
+     this row used to be, the middling portrait showed under 40% of itself and
+     the worst barely a fifth. Contain shows all of every one. */
+  object-fit: contain;
+  object-position: 50% 50%;
+  /* Transparent, not the panel colour: an opaque background here would paint
+     over the blurred mount behind it. */
+  background: transparent;
+  /* Positioned so it sits above that mount. */
+  position: relative;
 }
 
 /* --- side panels ----------------------------------------------------------- */

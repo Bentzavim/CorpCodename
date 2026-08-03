@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react';
 import type { CardKind } from '../game/types.js';
 import type { PublicCard } from '../room/types.js';
 import { Avatar } from './Avatar.js';
+import { resolvePhotoUrl } from './photo.js';
 
 interface Props {
   card: PublicCard;
@@ -46,8 +48,21 @@ export function Card({ card, index, disabled, onReveal }: Props) {
     >
       {/* Two rows, three fifths to two: the portrait is the thing you scan for,
           the name confirms it. The split is the grid's, not the image's, so it
-          holds whatever shape the portrait happens to be. */}
-      <span className="card__media">
+          holds whatever shape the portrait happens to be.
+
+          The portrait is shown whole rather than cropped to fill — the register's
+          photographs run from tall passport shots to wide landscape ones, and no
+          single crop suits both. What is left over is filled by the same picture,
+          blurred and pushed back, so the card still reads edge to edge. That is
+          what --shot is for. */}
+      <span
+        className="card__media"
+        style={
+          entity.photo
+            ? ({ '--shot': `url("${resolvePhotoUrl(entity.photo)}")` } as CSSProperties)
+            : undefined
+        }
+      >
         <Avatar entity={entity} />
       </span>
       <span className="card__body">
