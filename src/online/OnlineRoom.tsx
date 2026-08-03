@@ -3,6 +3,7 @@ import { Board } from '../components/Board.js';
 import { ClueBar } from '../components/ClueBar.js';
 import { GameLog } from '../components/GameLog.js';
 import { Scoreboard, TEAM_NAME } from '../components/Scoreboard.js';
+import type { GameMode } from '../game/types.js';
 import type { PublicRoom } from '../room/types.js';
 import { Lobby } from './Lobby.js';
 import { JoinScreen } from './JoinScreen.js';
@@ -12,11 +13,15 @@ import { inviteLink, readWantedSeat } from './useHashRoom.js';
 
 interface Props {
   code: string | null;
+  /** The mode a room created from here is born in. Ignored when joining one. */
+  mode?: GameMode;
+  /** Which way round to open the join screen for someone with no invite link. */
+  intent?: 'create' | 'join';
   onLeave: () => void;
   onEnterRoom: (code: string) => void;
 }
 
-export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
+export function OnlineRoom({ code, mode = 'duel', intent = 'join', onLeave, onEnterRoom }: Props) {
   const [playerId, setPlayerId] = useState<string | null>(() => loadIdentity()?.id ?? null);
   // Read once, at mount: joining rewrites the hash to drop the seat, so by the
   // time the room arrives the invitation is gone from the URL.
@@ -41,7 +46,7 @@ export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
           setPlayerId(id);
           onEnterRoom(wantedCode);
         } else {
-          const made = await createRoom(name);
+          const made = await createRoom(name, mode);
           setPlayerId(made.playerId);
           onEnterRoom(made.code);
         }
@@ -52,7 +57,7 @@ export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
         setJoining(false);
       }
     },
-    [onEnterRoom],
+    [onEnterRoom, mode],
   );
 
   // A reload should put you back in your seat rather than ask again: the room is
@@ -99,6 +104,8 @@ export function OnlineRoom({ code, onLeave, onEnterRoom }: Props) {
     return (
       <JoinScreen
         code={code}
+        mode={mode}
+        intent={intent}
         busy={joining}
         error={joinError}
         onSubmit={enter}

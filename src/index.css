@@ -968,6 +968,115 @@ a {
   flex: 1 1 auto;
 }
 
+/* --- landing --------------------------------------------------------------- */
+
+.landing {
+  max-width: 52rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: clamp(1rem, 6vh, 3rem);
+}
+
+.landing__head h1 {
+  font-size: clamp(1.9rem, 6vw, 3rem);
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+
+.landing__standfirst {
+  margin: 0.6rem 0 0;
+  max-width: 54ch;
+  color: var(--muted);
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.65;
+}
+
+.landing__routes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.landing__route {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), var(--shadow-rest);
+  padding: 1.1rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* The rule along the top carries the bench colour, so the routes are told apart
+   by the same colours the cards themselves use. A bar rather than a border
+   because Red v Blue needs two colours in one rule. */
+.landing__route::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+}
+
+/* Two benches facing each other, so the rule is halved rather than one colour. */
+.landing__route--duel::before {
+  background: linear-gradient(90deg, var(--red) 0 50%, var(--blue) 50%);
+}
+
+.landing__route--relay::before {
+  background: var(--violet);
+}
+
+.landing__who {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.landing__route h2 {
+  font-size: 1.25rem;
+  letter-spacing: 0.01em;
+}
+
+.landing__route p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.landing__ways {
+  /* Pinned to the foot so the buttons line up across routes of unequal prose. */
+  margin-top: auto;
+  padding-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.landing__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 1.1rem;
+}
+
+/* The colophon is a sibling of the landing, so it needs the same column to sit
+   in or it hangs off the left of everything above it. */
+.landing ~ .colophon {
+  width: 100%;
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
 /* --- rules ----------------------------------------------------------------- */
 
 .modal__panel--rules {

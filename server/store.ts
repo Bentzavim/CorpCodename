@@ -1,5 +1,6 @@
 import { createClient } from 'redis';
 import { randomSeed } from '../src/game/rng.js';
+import type { GameMode } from '../src/game/types.js';
 import { ROOM_CODE_LENGTH, ROOM_TTL_MS, type PlayerId, type Room } from '../src/room/types.js';
 import { cleanName } from '../src/room/actions.js';
 
@@ -33,10 +34,16 @@ export function newPlayerId(): PlayerId {
   return `p_${randomSeed(16).toLowerCase()}`;
 }
 
-export function blankRoom(code: string, hostId: PlayerId, hostName: string, now = Date.now()): Room {
+export function blankRoom(
+  code: string,
+  hostId: PlayerId,
+  hostName: string,
+  now = Date.now(),
+  mode: GameMode = 'duel',
+): Room {
   return {
     code,
-    mode: 'duel',
+    mode,
     seed: randomSeed(10),
     hostId,
     players: [{ id: hostId, name: cleanName(hostName), team: null, seat: null, lastSeen: now }],

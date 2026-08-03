@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Board } from './components/Board.js';
 import { ClueBar } from './components/ClueBar.js';
 import { GameLog } from './components/GameLog.js';
+import { Landing } from './components/Landing.js';
 import { RosterImport } from './components/RosterImport.js';
 import { Rules } from './components/Rules.js';
 import { Scoreboard } from './components/Scoreboard.js';
@@ -31,27 +32,112 @@ function readMode(): GameMode {
   return mode === 'relay' || mode === 'solo' ? 'relay' : 'duel';
 }
 
+/**
+ * Where we are. The hash is the authority on arrival — a link naming a room or a
+ * seed is a choice already made — and this takes over once someone starts
+ * choosing for themselves.
+ */
+type Route =
+  | { at: 'landing' }
+  | { at: 'local' }
+  | {
+      at: 'online';
+      mode: GameMode;
+      intent: 'create' | 'join';
+      /**
+       * Where Back goes, and the hash to put back when it gets there. Joining a
+       * room overwrites the hash with the room code, so a game left behind has
+       * to have its seed kept somewhere or backing out loses the board.
+       */
+      back: { at: 'landing' } | { at: 'local'; hash: string };
+    };
+
+function initialRoute(): Route {
+  const params = hashParams();
+  if (params.get('room')) {
+    return { at: 'online', mode: 'duel', intent: 'join', back: { at: 'landing' } };
+  }
+  if (params.get('seed')) return { at: 'local' };
+  return { at: 'landing' };
+}
+
 export default function App() {
   const [roomCode, setRoomCode] = useHashRoom();
-  const [wantOnline, setWantOnline] = useState(false);
+  const [route, setRoute] = useState<Route>(initialRoute);
 
-  if (roomCode !== null || wantOnline) {
+  const goLanding = useCallback(() => {
+    window.history.replaceState(null, '', ' ');
+    setRoute({ at: 'landing' });
+  }, []);
+
+  if (roomCode !== null || route.at === 'online') {
+    const back = route.at === 'online' ? route.back : { at: 'landing' as const };
     return (
       <div className="app">
         <Brand />
         <OnlineRoom
           code={roomCode}
+          mode={route.at === 'online' ? route.mode : 'duel'}
+          intent={route.at === 'online' ? route.intent : 'join'}
           onEnterRoom={setRoomCode}
           onLeave={() => {
+            // Clearing the room code rewrites the hash, so anything we mean to
+            // restore has to go back afterwards, not before.
             setRoomCode(null);
-            setWantOnline(false);
+            if (back.at === 'local') {
+              window.history.replaceState(null, '', back.hash);
+              setRoute({ at: 'local' });
+            } else {
+              goLanding();
+            }
           }}
         />
       </div>
     );
   }
 
-  return <LocalGame onGoOnline={() => setWantOnline(true)} />;
+  if (route.at === 'landing') {
+    return (
+      <div className="app">
+        <Landing
+          rosterCount={loadRoster().length}
+          rules={<RulesButton />}
+          onJoinWithCode={() =>
+            setRoute({ at: 'online', mode: 'duel', intent: 'join', back: { at: 'landing' } })
+          }
+          onPlay={(mode, venue) => {
+            if (venue === 'online') {
+              setRoute({ at: 'online', mode, intent: 'create', back: { at: 'landing' } });
+              return;
+            }
+            // The seed goes in the hash before the game mounts, because that is
+            // where LocalGame reads it from — and it makes the board shareable
+            // from the moment it is dealt.
+            const seed = randomSeed();
+            const suffix = mode === 'relay' ? '&mode=relay' : '';
+            window.history.replaceState(null, '', `#seed=${seed}${suffix}`);
+            setRoute({ at: 'local' });
+          }}
+        />
+        <Colophon />
+      </div>
+    );
+  }
+
+  return (
+    <LocalGame
+      onGoOnline={(mode) =>
+        setRoute({
+          at: 'online',
+          mode,
+          intent: 'create',
+          // Snapshotted now, while the hash still names the board being left.
+          back: { at: 'local', hash: window.location.hash },
+        })
+      }
+      onHome={goLanding}
+    />
+  );
 }
 
 function Brand() {
@@ -90,7 +176,13 @@ export function RulesButton({ mode = 'duel' }: { mode?: GameMode }) {
   );
 }
 
-function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
+function LocalGame({
+  onGoOnline,
+  onHome,
+}: {
+  onGoOnline: (mode: GameMode) => void;
+  onHome: () => void;
+}) {
   // Held in state rather than derived: the roster is read from localStorage, so
   // it has to be rebuilt explicitly after an import.
   const [roster, setRoster] = useState<MemberRecord[]>(loadRoster);
@@ -227,10 +319,18 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
             <button
               type="button"
               className="btn"
-              onClick={onGoOnline}
+              onClick={() => onGoOnline(mode)}
               title="Everyone on their own screen, with the key card kept on the server"
             >
               Play online
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={onHome}
+              title="Back to the ways to play"
+            >
+              Ways to play
             </button>
           </div>
         )}
@@ -350,20 +450,27 @@ function LocalGame({ onGoOnline }: { onGoOnline: () => void }) {
         />
       )}
 
-      <footer className="colophon">
-        <p>
-          Names and portraits come from the City of London Corporation&rsquo;s{' '}
-          <a href={ROSTER_SOURCE} target="_blank" rel="noreferrer">
-            public register of Members
-          </a>
-          {ROSTER_FETCHED_AT && <> as it stood on {ROSTER_FETCHED_AT}</>}. An unofficial
-          game, not affiliated with or endorsed by the Corporation.
-        </p>
-        <p>
-          Codenames is a game by Vlaada Chv&aacute;til, published by Czech Games Edition.
-          This is an unofficial take on the mechanics with a different card set.
-        </p>
-      </footer>
+      <Colophon />
     </div>
+  );
+}
+
+/** Where the names came from, and whose game this is a version of. */
+function Colophon() {
+  return (
+    <footer className="colophon">
+      <p>
+        Names and portraits come from the City of London Corporation&rsquo;s{' '}
+        <a href={ROSTER_SOURCE} target="_blank" rel="noreferrer">
+          public register of Members
+        </a>
+        {ROSTER_FETCHED_AT && <> as it stood on {ROSTER_FETCHED_AT}</>}. An unofficial game,
+        not affiliated with or endorsed by the Corporation.
+      </p>
+      <p>
+        Codenames is a game by Vlaada Chv&aacute;til, published by Czech Games Edition. This
+        is an unofficial take on the mechanics with a different card set.
+      </p>
+    </footer>
   );
 }

@@ -92,7 +92,11 @@ export default async function handler(req: Req, res: Res) {
     if (op === 'create') {
       const playerId = newPlayerId();
       const code = newRoomCode();
-      const room = blankRoom(code, playerId, String(body.name ?? ''), now);
+      // The room is born in the mode the host chose, rather than dealt as a duel
+      // and switched a moment later: switching clears every seat, so a room that
+      // arrived as one thing and became another would unseat whoever was quick.
+      const wanted = body.mode === 'relay' ? 'relay' : 'duel';
+      const room = blankRoom(code, playerId, String(body.name ?? ''), now, wanted);
       await store.create(room);
       return send(res, 200, { playerId, room: publicRoom(room, playerId, now) });
     }

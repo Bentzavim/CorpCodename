@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { GameMode } from '../game/types.js';
 import type { PublicRoom, RoomAction } from '../room/types.js';
 
 const PLAYER_KEY = 'corpcodename:player:v1';
@@ -69,8 +70,11 @@ async function post(body: Record<string, unknown>): Promise<Record<string, unkno
   return data;
 }
 
-export async function createRoom(name: string): Promise<{ code: string; playerId: string }> {
-  const data = await post({ op: 'create', name });
+export async function createRoom(
+  name: string,
+  mode: GameMode = 'duel',
+): Promise<{ code: string; playerId: string }> {
+  const data = await post({ op: 'create', name, mode });
   const room = data.room as PublicRoom;
   const playerId = data.playerId as string;
   saveIdentity({ id: playerId, name });

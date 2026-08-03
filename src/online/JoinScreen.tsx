@@ -1,21 +1,34 @@
 import { useState } from 'react';
 import { normaliseSeed } from '../game/rng.js';
+import type { GameMode } from '../game/types.js';
 import { loadIdentity } from './useRoom.js';
 
 interface Props {
   /** Prefilled from an invite link, when there is one. */
   code: string | null;
+  /** The game a room made from here will be. */
+  mode?: GameMode;
+  /** Which way round to open when there is no invite link to follow. */
+  intent?: 'create' | 'join';
   busy: boolean;
   error: string | null;
   onSubmit: (name: string, code: string | null) => void;
   onCancel: () => void;
 }
 
-export function JoinScreen({ code, busy, error, onSubmit, onCancel }: Props) {
+export function JoinScreen({
+  code,
+  mode = 'duel',
+  intent = 'join',
+  busy,
+  error,
+  onSubmit,
+  onCancel,
+}: Props) {
   const [name, setName] = useState(() => loadIdentity()?.name ?? '');
   const [typedCode, setTypedCode] = useState(code ?? '');
   const invited = code !== null;
-  const [joining, setJoining] = useState(invited);
+  const [joining, setJoining] = useState(invited || intent === 'join');
   // Creating a room needs only a name; joining needs a code as well.
   const needsCode = joining && !invited;
   const ready = name.trim() !== '' && (!needsCode || typedCode.trim().length > 0);
@@ -30,10 +43,19 @@ export function JoinScreen({ code, busy, error, onSubmit, onCancel }: Props) {
           onSubmit(name.trim(), joining ? normaliseSeed(typedCode) : null);
         }}
       >
-        <h2>{invited ? `Join room ${code}` : 'Play with other people'}</h2>
+        <h2>
+          {invited
+            ? `Join room ${code}`
+            : joining
+              ? 'Join a room'
+              : mode === 'relay'
+                ? 'Start a two-player game'
+                : 'Start a Red v Blue room'}
+        </h2>
         <p>
-          Everyone gets their own screen. Spymasters see the key card; operatives see only
-          what has been turned over.
+          {!invited && !joining && mode === 'relay'
+            ? 'You and one other, a turn each. You will get a link for the spymaster and a link for the guesser to send between you.'
+            : 'Everyone gets their own screen. Spymasters see the key card; operatives see only what has been turned over.'}
         </p>
 
         <label className="field field--wide">
